@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { Building2, Search } from '@lucide/vue';
+import { Building2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import CatalogListLayout from '@/components/catalog/CatalogListLayout.vue';
 import PartyDetail from '@/components/catalog/PartyDetail.vue';
 import PartyFormSheet from '@/components/catalog/PartyFormSheet.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useFilteredList } from '@/composables/useFilteredList';
 import { index, show } from '@/routes/parties';
 import type {
@@ -46,40 +46,24 @@ const term = ref(props.filters.search ?? '');
     <Head :title="$t('Parties')" />
 
     <div class="flex h-full min-h-0">
-        <section
-            class="flex w-full min-w-0 flex-col border-r lg:w-[23rem] lg:shrink-0"
+        <CatalogListLayout
+            v-model="term"
+            :title="$t('Parties')"
+            :subtitle="$t(':count records', { count: parties.total })"
+            :paginator="parties"
+            :placeholder="$t('Search by name or RFC')"
+            search-test="party-search"
+            @search="list.search"
         >
-            <header
-                class="flex items-center justify-between gap-2 border-b px-4 py-3"
-            >
-                <div>
-                    <h1 class="text-sm font-semibold">{{ $t('Parties') }}</h1>
-                    <p class="text-xs text-muted-foreground">
-                        {{ $t(':count records', { count: parties.total }) }}
-                    </p>
-                </div>
-
+            <template #actions>
                 <PartyFormSheet
                     v-if="can.manage"
                     :team-slug="teamSlug"
                     :types="types"
                 />
-            </header>
+            </template>
 
-            <div class="space-y-2 border-b p-3">
-                <div class="relative">
-                    <Search
-                        class="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 opacity-50"
-                    />
-                    <Input
-                        v-model="term"
-                        class="pl-8"
-                        :placeholder="$t('Search by name or RFC')"
-                        data-test="party-search"
-                        @input="list.search(term)"
-                    />
-                </div>
-
+            <template #filters>
                 <div class="flex flex-wrap gap-1">
                     <Button
                         size="sm"
@@ -100,95 +84,51 @@ const term = ref(props.filters.search ?? '');
                         {{ type.label }}
                     </Button>
                 </div>
-            </div>
+            </template>
 
-            <ul class="min-h-0 flex-1 overflow-y-auto">
-                <li v-for="item in parties.data" :key="item.id">
-                    <Link
-                        :href="show({ current_team: teamSlug, party: item.id })"
-                        :class="[
-                            'flex items-start gap-3 border-b px-4 py-3 transition-colors',
-                            party?.id === item.id
-                                ? 'bg-accent'
-                                : 'hover:bg-accent/40',
-                        ]"
-                        data-test="party-row"
-                    >
-                        <Building2 class="mt-0.5 size-4 shrink-0 opacity-50" />
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium">
-                                {{ item.name }}
-                            </p>
-                            <p class="truncate text-xs text-muted-foreground">
-                                {{ item.type_label }}
-                                <template v-if="item.rfc">
-                                    · {{ item.rfc }}
-                                </template>
-                            </p>
-                            <p
-                                v-if="
-                                    item.contacts_count > 0 ||
-                                    item.locations_count > 0
-                                "
-                                class="truncate text-[11px] text-muted-foreground"
-                            >
-                                {{
-                                    $t(
-                                        ':contacts contacts · :locations sites',
-                                        {
-                                            contacts: item.contacts_count,
-                                            locations: item.locations_count,
-                                        },
-                                    )
-                                }}
-                            </p>
-                        </div>
-                    </Link>
-                </li>
-
-                <li
-                    v-if="parties.data.length === 0"
-                    class="px-4 py-8 text-center text-sm text-muted-foreground"
+            <li v-for="item in parties.data" :key="item.id">
+                <Link
+                    :href="show({ current_team: teamSlug, party: item.id })"
+                    :class="[
+                        'flex items-start gap-3 border-b px-4 py-3 transition-colors',
+                        party?.id === item.id
+                            ? 'bg-accent'
+                            : 'hover:bg-accent/40',
+                    ]"
+                    data-test="party-row"
                 >
-                    {{ $t('No parties match the filter.') }}
-                </li>
-            </ul>
-
-            <footer
-                v-if="parties.last_page > 1"
-                class="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground"
-            >
-                <span>
-                    {{ parties.from }}–{{ parties.to }} / {{ parties.total }}
-                </span>
-                <div class="flex gap-1">
-                    <Button
-                        v-for="link in parties.links.filter(
-                            (l) =>
-                                l.label === '&laquo; Previous' ||
-                                l.label === 'Next &raquo;',
-                        )"
-                        :key="link.label"
-                        as-child
-                        variant="ghost"
-                        size="sm"
-                        :disabled="!link.url"
-                    >
-                        <Link
-                            v-if="link.url"
-                            :href="link.url"
-                            preserve-scroll
-                            preserve-state
+                    <Building2 class="mt-0.5 size-4 shrink-0 opacity-50" />
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium">
+                            {{ item.name }}
+                        </p>
+                        <p class="truncate text-xs text-muted-foreground">
+                            {{ item.type_label }}
+                            <template v-if="item.rfc">
+                                · {{ item.rfc }}
+                            </template>
+                        </p>
+                        <p
+                            v-if="
+                                item.contacts_count > 0 || item.locations_count > 0
+                            "
+                            class="truncate text-[11px] text-muted-foreground"
                         >
-                            {{ link.label.includes('Previous') ? '‹' : '›' }}
-                        </Link>
-                        <span v-else>
-                            {{ link.label.includes('Previous') ? '‹' : '›' }}
-                        </span>
-                    </Button>
-                </div>
-            </footer>
-        </section>
+                            {{
+                                $t(':contacts contacts · :locations sites', {
+                                    contacts: item.contacts_count,
+                                    locations: item.locations_count,
+                                })
+                            }}
+                        </p>
+                    </div>
+                </Link>
+            </li>
+
+            <template #empty>
+                {{ $t('No parties match the filter.') }}
+            </template>
+        </CatalogListLayout>
 
         <section class="hidden min-h-0 flex-1 overflow-y-auto lg:block">
             <PartyDetail
