@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fleet\DriverController;
+use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Locations\LocationController;
 use App\Http\Controllers\Parties\PartyContactController;
@@ -44,6 +45,12 @@ Route::prefix('{current_team}')
         Route::get('drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
         Route::patch('drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
         Route::delete('drivers/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
+
+        Route::get('vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
+        Route::post('vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
+        Route::get('vehicles/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
+        Route::patch('vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
+        Route::delete('vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
     });
 
 Route::middleware(['auth'])->group(function () {

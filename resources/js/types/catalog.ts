@@ -75,6 +75,19 @@ export type Driver = {
     carrier_name: string | null;
 };
 
+export type Vehicle = {
+    id: number;
+    name: string;
+    plate: string;
+    configuration: string;
+    carrier_party_id: number | null;
+    carrier_name: string | null;
+    max_payload_grams: number;
+    max_payload_kg: number;
+    max_volume_cm3: number | null;
+    max_volume_m3: number | null;
+};
+
 export type SearchResult = {
     type: 'party' | 'location';
     title: string;
