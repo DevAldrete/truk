@@ -330,9 +330,25 @@ export type TripAssignmentRef = {
     released_at: string | null;
 };
 
+export type TripCapacity = {
+    shipments_count: number;
+    weight_grams: number;
+    volume_cm3: number;
+    weight_limit_grams: number | null;
+    volume_limit_cm3: number | null;
+    weight_utilization: number | null;
+    volume_utilization: number | null;
+    over_weight: boolean;
+    over_volume: boolean;
+    over: boolean;
+};
+
 export type TripDetail = Trip & {
     assignments: TripAssignmentRef[];
     stops: StopRef[];
+    capacity: TripCapacity;
+    capacity_override_reason: string | null;
+    capacity_overridden_at: string | null;
 };
 
 export type StopType = 'pickup' | 'delivery' | 'other';

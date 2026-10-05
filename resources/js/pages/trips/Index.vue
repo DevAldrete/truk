@@ -33,7 +33,7 @@ const props = defineProps<{
     stopTypes: Option[];
     stopStatuses: Option[];
     trip?: TripDetailType;
-    can: { manage: boolean };
+    can: { manage: boolean; overrideCapacity: boolean };
 }>();
 
 const page = usePage();
@@ -147,6 +147,7 @@ const status = ref(props.filters.status ?? 'all');
                 :stop-types="stopTypes"
                 :stop-statuses="stopStatuses"
                 :can-manage="can.manage"
+                :can-override="can.overrideCapacity"
             />
 
             <div

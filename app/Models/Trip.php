@@ -28,6 +28,9 @@ use Illuminate\Support\Carbon;
  * @property int|null $vehicle_id
  * @property int|null $trailer_id
  * @property string|null $notes
+ * @property string|null $capacity_override_reason
+ * @property int|null $capacity_overridden_by
+ * @property Carbon|null $capacity_overridden_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -115,6 +118,7 @@ class Trip extends Model
             'status' => TripStatus::class,
             'planned_start_at' => 'datetime',
             'planned_end_at' => 'datetime',
+            'capacity_overridden_at' => 'datetime',
         ];
     }
 }

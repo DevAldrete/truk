@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Trips;
 
+use App\Actions\Trips\ComputeTripCapacity;
 use App\Actions\Trips\SaveTrip;
 use App\Enums\StopStatus;
 use App\Enums\StopType;
@@ -34,11 +35,11 @@ class TripController extends Controller
     /**
      * Display the dispatch planner with the given trip open.
      */
-    public function show(Request $request, Team $current_team, Trip $trip): Response
+    public function show(Request $request, Team $current_team, Trip $trip, ComputeTripCapacity $capacity): Response
     {
         return Inertia::render('trips/Index', [
             ...$this->pageProps($request, $current_team),
-            'trip' => $this->detail($trip),
+            'trip' => $this->detail($trip, $capacity->handle($trip)),
         ]);
     }
 
@@ -62,7 +63,7 @@ class TripController extends Controller
     /**
      * Update the given trip.
      */
-    public function update(SaveTripRequest $request, Team $current_team, Trip $trip, SaveTrip $saveTrip): RedirectResponse
+    public function update(SaveTripRequest $request, Team $current_team, Trip $trip, SaveTrip $saveTrip, ComputeTripCapacity $capacity): RedirectResponse
     {
         Gate::authorize('manageOperations', $current_team);
 
@@ -76,6 +77,10 @@ class TripController extends Controller
                     'status' => __('That status change is not allowed.'),
                 ]);
             }
+
+            if ($target === TripStatus::Dispatched) {
+                $this->assertCapacity($request, $current_team, $trip, $data, $capacity);
+            }
         }
 
         $saveTrip->update($trip, $data);
@@ -83,6 +88,40 @@ class TripController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name was updated.', ['name' => $trip->number])]);
 
         return back();
+    }
+
+    /**
+     * Block an over-capacity dispatch unless it is overridden with a reason.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function assertCapacity(Request $request, Team $team, Trip $trip, array $data, ComputeTripCapacity $capacity): void
+    {
+        if (! $capacity->handle($trip)['over']) {
+            return;
+        }
+
+        $user = $request->user();
+
+        if ($user === null || ! $user->hasTeamPermission($team, TeamPermission::OverrideCapacity)) {
+            throw ValidationException::withMessages([
+                'status' => __('This trip is over capacity and you cannot override it.'),
+            ]);
+        }
+
+        $reason = $data['capacity_override_reason'] ?? null;
+
+        if (blank($reason)) {
+            throw ValidationException::withMessages([
+                'capacity_override_reason' => __('A reason is required to dispatch an over-capacity trip.'),
+            ]);
+        }
+
+        $trip->forceFill([
+            'capacity_override_reason' => $reason,
+            'capacity_overridden_by' => $user->id,
+            'capacity_overridden_at' => now(),
+        ]);
     }
 
     /**
@@ -140,6 +179,7 @@ class TripController extends Controller
             'stopStatuses' => StopStatus::options(),
             'can' => [
                 'manage' => $request->user()->hasTeamPermission($team, TeamPermission::ManageOperations),
+                'overrideCapacity' => $request->user()->hasTeamPermission($team, TeamPermission::OverrideCapacity),
             ],
         ];
     }
@@ -173,9 +213,10 @@ class TripController extends Controller
     /**
      * Get the full record shown in the detail panel.
      *
+     * @param  array<string, mixed>  $capacity
      * @return array<string, mixed>
      */
-    protected function detail(Trip $trip): array
+    protected function detail(Trip $trip, array $capacity): array
     {
         $trip->load(['driver:id,name', 'vehicle:id,name', 'trailer:id,name']);
         $trip->load(['assignments' => fn ($query) => $query->with(['driver:id,name', 'vehicle:id,name', 'trailer:id,name'])->orderByDesc('id')]);
@@ -183,6 +224,9 @@ class TripController extends Controller
 
         return [
             ...$this->summary($trip),
+            'capacity' => $capacity,
+            'capacity_override_reason' => $trip->capacity_override_reason,
+            'capacity_overridden_at' => $trip->capacity_overridden_at?->toIso8601String(),
             'assignments' => $trip->assignments
                 ->map(fn (TripAssignment $assignment): array => [
                     'id' => $assignment->id,

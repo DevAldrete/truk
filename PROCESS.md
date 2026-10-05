@@ -67,7 +67,7 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 | **P1a**  | Parties (+contacts), Locations, ⌘K command palette                                              | ✅ Done    |
 | **P1b**  | Drivers, Vehicles, Trailers, Compliance documents                                               | ✅ Done    |
 | **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
-| **P3**   | Planning & dispatch: loads ✅, trips ✅, stops ✅, capacity guard, dispatch board                | 🚧 In progress |
+| **P3**   | Planning & dispatch: loads ✅, trips ✅, stops ✅, capacity ✅, dispatch board                   | 🚧 In progress |
 | **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ⬜         |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
@@ -461,7 +461,19 @@ Goal: answer _"can this unit move this load, legally and physically, and is it f
 - Feature tests: sequencing, snapshot, attach/detach, reorder, scoped bindings,
   status transitions, authorization.
 
-**Remaining:** the capacity guard and the dispatch board.
+**Delivered (slice 4):**
+
+- `ComputeTripCapacity`: planned weight/volume over the **distinct** shipments on
+  the trip's stops, against `min(vehicle, trailer)` limits, with fill percentages.
+- Dispatch is **blocked** when the trip is over capacity; a user with the new
+  `OverrideCapacity` permission (owner/admin) may dispatch with a recorded reason
+  (`capacity_override_reason`, `capacity_overridden_by`, `capacity_overridden_at`).
+- Capacity card in the trip detail: weight and volume gauges, over-capacity
+  banner, and the override field when allowed.
+- Feature tests: blocked without permission, override with reason records who/why,
+  missing reason rejected, within-limit dispatch, and no-unit (no limit).
+
+**Remaining:** the dispatch board.
 
 - **Entities:** `loads`, `trips`, `trip_assignments`, `stops`, `stop_shipments`,
   `trip_compliance` (payload snapshot), `resource_reservations`.

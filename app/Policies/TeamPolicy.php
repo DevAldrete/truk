@@ -41,6 +41,14 @@ class TeamPolicy
     }
 
     /**
+     * Determine whether the user can dispatch an over-capacity trip.
+     */
+    public function overrideCapacity(User $user, Team $team): bool
+    {
+        return $user->hasTeamPermission($team, TeamPermission::OverrideCapacity);
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool

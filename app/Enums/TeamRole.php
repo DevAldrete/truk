@@ -34,6 +34,7 @@ enum TeamRole: string
                 TeamPermission::CancelInvitation,
                 TeamPermission::ManageCatalog,
                 TeamPermission::ManageOperations,
+                TeamPermission::OverrideCapacity,
             ],
             self::Dispatcher => [
                 TeamPermission::ManageCatalog,
