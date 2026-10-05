@@ -2,8 +2,10 @@
 import { router } from '@inertiajs/vue3';
 import {
     Building2,
+    ClipboardList,
     LayoutGrid,
     MapPin,
+    Package,
     Search,
     Settings,
     Truck,
@@ -21,7 +23,9 @@ import { t } from '@/lib/i18n';
 import { dashboard, search as searchRoute } from '@/routes';
 import { index as driversIndex } from '@/routes/drivers';
 import { index as locationsIndex } from '@/routes/locations';
+import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
+import { index as shipmentsIndex } from '@/routes/shipments';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import type { SearchResult } from '@/types';
 
@@ -61,6 +65,18 @@ const commands = computed<Item[]>(() => [
         label: t('Locations'),
         icon: MapPin,
         url: locationsIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'orders',
+        label: t('Orders'),
+        icon: ClipboardList,
+        url: ordersIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'shipments',
+        label: t('Shipments'),
+        icon: Package,
+        url: shipmentsIndex.url({ current_team: props.teamSlug }),
     },
     {
         key: 'drivers',
@@ -105,7 +121,11 @@ const items = computed<Item[]>(() => {
                       ? MapPin
                       : result.type === 'driver'
                         ? Users
-                        : Truck,
+                        : result.type === 'order'
+                          ? ClipboardList
+                          : result.type === 'shipment'
+                            ? Package
+                            : Truck,
             url: result.url,
         })),
     ];
@@ -226,7 +246,7 @@ onUnmounted(() => {
         >
             <DialogTitle class="sr-only">{{ $t('Search') }}</DialogTitle>
             <DialogDescription class="sr-only">
-                {{ $t('Search customers, carriers, units, and drivers') }}
+                {{ $t('Search parties, sites, orders, shipments, and fleet') }}
             </DialogDescription>
 
             <div class="flex items-center gap-2 border-b px-3">

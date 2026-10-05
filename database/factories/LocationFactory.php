@@ -43,6 +43,14 @@ class LocationFactory extends Factory
             'state' => $place['state'],
             'postal_code' => fake()->numerify('#####'),
             'references' => fake()->optional()->sentence(),
+            'latitude' => fake()->optional()->latitude(),
+            'longitude' => fake()->optional()->longitude(),
+            'timezone' => fake()->optional()->randomElement([
+                'America/Mexico_City',
+                'America/Monterrey',
+                'America/Chihuahua',
+                'America/Tijuana',
+            ]),
         ];
     }
 }

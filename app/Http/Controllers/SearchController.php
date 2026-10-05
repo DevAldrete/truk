@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Driver;
 use App\Models\Location;
+use App\Models\Order;
 use App\Models\Party;
+use App\Models\Shipment;
 use App\Models\Team;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
@@ -98,8 +100,49 @@ class SearchController extends Controller
                 ]),
             ]);
 
+        $orders = Order::query()
+            ->where(fn ($query) => $query
+                ->whereRaw('LOWER(number) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(customer_name) LIKE ?', [$needle]))
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (Order $order) => [
+                'type' => 'order',
+                'title' => $order->number,
+                'subtitle' => $order->customer_name ?? $order->status->label(),
+                'url' => route('orders.show', [
+                    'current_team' => $current_team->slug,
+                    'order' => $order->id,
+                ]),
+            ]);
+
+        $shipments = Shipment::query()
+            ->where(fn ($query) => $query
+                ->whereRaw('LOWER(number) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(customer_name) LIKE ?', [$needle]))
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (Shipment $shipment) => [
+                'type' => 'shipment',
+                'title' => $shipment->number,
+                'subtitle' => $shipment->customer_name ?? $shipment->status->label(),
+                'url' => route('shipments.show', [
+                    'current_team' => $current_team->slug,
+                    'shipment' => $shipment->id,
+                ]),
+            ]);
+
         return response()->json([
-            'results' => $parties->concat($locations)->concat($drivers)->concat($vehicles)->values()->all(),
+            'results' => $parties
+                ->concat($locations)
+                ->concat($drivers)
+                ->concat($vehicles)
+                ->concat($orders)
+                ->concat($shipments)
+                ->values()
+                ->all(),
         ]);
     }
 }

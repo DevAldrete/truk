@@ -33,6 +33,14 @@ class TeamPolicy
     }
 
     /**
+     * Determine whether the user can maintain the operational records of the team.
+     */
+    public function manageOperations(User $user, Team $team): bool
+    {
+        return $user->hasTeamPermission($team, TeamPermission::ManageOperations);
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool

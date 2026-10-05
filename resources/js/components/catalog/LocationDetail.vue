@@ -38,12 +38,30 @@ const form = useForm({
     state: props.location.state,
     postal_code: props.location.postal_code,
     references: props.location.references ?? '',
+    latitude:
+        props.location.latitude !== null ? String(props.location.latitude) : '',
+    longitude:
+        props.location.longitude !== null
+            ? String(props.location.longitude)
+            : '',
+    timezone: props.location.timezone ?? 'none',
 });
+
+const timezones = [
+    'America/Mexico_City',
+    'America/Monterrey',
+    'America/Chihuahua',
+    'America/Mazatlan',
+    'America/Hermosillo',
+    'America/Tijuana',
+    'America/Cancun',
+];
 
 const save = () => {
     form.transform((data) => ({
         ...data,
         party_id: data.party_id === 'none' ? null : data.party_id,
+        timezone: data.timezone === 'none' ? null : data.timezone,
     }));
 
     form.patch(
@@ -206,6 +224,54 @@ const save = () => {
                         :disabled="!canManage"
                     />
                     <InputError :message="form.errors.references" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="location-latitude">{{ $t('Latitude') }}</Label>
+                    <Input
+                        id="location-latitude"
+                        v-model="form.latitude"
+                        type="number"
+                        step="0.0000001"
+                        :disabled="!canManage"
+                    />
+                    <InputError :message="form.errors.latitude" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="location-longitude">
+                        {{ $t('Longitude') }}
+                    </Label>
+                    <Input
+                        id="location-longitude"
+                        v-model="form.longitude"
+                        type="number"
+                        step="0.0000001"
+                        :disabled="!canManage"
+                    />
+                    <InputError :message="form.errors.longitude" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="location-timezone">{{ $t('Timezone') }}</Label>
+                    <Select v-model="form.timezone" :disabled="!canManage">
+                        <SelectTrigger id="location-timezone" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">
+                                {{ $t('None') }}
+                            </SelectItem>
+                            <SelectItem
+                                v-for="zone in timezones"
+                                :key="zone"
+                                :value="zone"
+                            >
+                                {{ zone }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.timezone" />
                 </div>
 
                 <div

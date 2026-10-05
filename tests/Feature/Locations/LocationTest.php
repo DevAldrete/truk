@@ -186,3 +186,47 @@ test('sites of another team are not reachable', function () {
         ->delete(route('locations.destroy', [$team, $otherLocation]))
         ->assertNotFound();
 });
+
+test('a site stores coordinates and a timezone', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    $this->actingAs($user)->post(route('locations.store', $team), [
+        'name' => 'Bodega Norte',
+        'street' => 'Av. Constitución',
+        'city' => 'Monterrey',
+        'state' => 'Nuevo León',
+        'postal_code' => '64000',
+        'latitude' => 25.6866,
+        'longitude' => -100.3161,
+        'timezone' => 'America/Monterrey',
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('locations', [
+        'name' => 'Bodega Norte',
+        'timezone' => 'America/Monterrey',
+    ]);
+});
+
+test('coordinates outside the valid range are rejected', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    $this->actingAs($user)
+        ->from(route('locations.index', $team))
+        ->post(route('locations.store', $team), [
+            'name' => 'Bodega Norte',
+            'street' => 'Av. Constitución',
+            'city' => 'Monterrey',
+            'state' => 'Nuevo León',
+            'postal_code' => '64000',
+            'latitude' => 200,
+            'longitude' => -300,
+            'timezone' => 'Mars/Olympus',
+        ])
+        ->assertSessionHasErrors(['latitude', 'longitude', 'timezone']);
+
+    $this->assertDatabaseCount('locations', 0);
+});

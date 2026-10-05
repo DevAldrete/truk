@@ -134,6 +134,9 @@ class LocationController extends Controller
             'state' => $location->state,
             'postal_code' => $location->postal_code,
             'references' => $location->references,
+            'latitude' => $location->latitude,
+            'longitude' => $location->longitude,
+            'timezone' => $location->timezone,
         ];
     }
 

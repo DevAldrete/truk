@@ -44,12 +44,26 @@ const form = useForm({
     state: '',
     postal_code: '',
     references: '',
+    latitude: '',
+    longitude: '',
+    timezone: 'none',
 });
+
+const timezones = [
+    'America/Mexico_City',
+    'America/Monterrey',
+    'America/Chihuahua',
+    'America/Mazatlan',
+    'America/Hermosillo',
+    'America/Tijuana',
+    'America/Cancun',
+];
 
 const submit = () => {
     form.transform((data) => ({
         ...data,
         party_id: data.party_id === 'none' ? null : data.party_id,
+        timezone: data.timezone === 'none' ? null : data.timezone,
     }));
 
     form.post(store.url({ current_team: props.teamSlug }), {
@@ -170,6 +184,59 @@ const submit = () => {
                         v-model="form.references"
                     />
                     <InputError :message="form.errors.references" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="new-location-latitude">
+                        {{ $t('Latitude') }}
+                    </Label>
+                    <Input
+                        id="new-location-latitude"
+                        v-model="form.latitude"
+                        type="number"
+                        step="0.0000001"
+                    />
+                    <InputError :message="form.errors.latitude" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="new-location-longitude">
+                        {{ $t('Longitude') }}
+                    </Label>
+                    <Input
+                        id="new-location-longitude"
+                        v-model="form.longitude"
+                        type="number"
+                        step="0.0000001"
+                    />
+                    <InputError :message="form.errors.longitude" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-2">
+                    <Label for="new-location-timezone">
+                        {{ $t('Timezone') }}
+                    </Label>
+                    <Select v-model="form.timezone">
+                        <SelectTrigger
+                            id="new-location-timezone"
+                            class="w-full"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">
+                                {{ $t('None') }}
+                            </SelectItem>
+                            <SelectItem
+                                v-for="zone in timezones"
+                                :key="zone"
+                                :value="zone"
+                            >
+                                {{ zone }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.timezone" />
                 </div>
             </form>
 

@@ -62,6 +62,22 @@ export type Location = {
     state: string;
     postal_code: string;
     references: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    timezone: string | null;
+};
+
+export type LocationSnapshot = {
+    name: string;
+    street: string;
+    exterior_number: string | null;
+    interior_number: string | null;
+    neighborhood: string | null;
+    city: string;
+    state: string;
+    postal_code: string;
+    latitude: number | null;
+    longitude: number | null;
 };
 
 export type Driver = {
@@ -122,8 +138,129 @@ export type ComplianceDocument = {
     notes: string | null;
 };
 
+export type OrderStatus =
+    | 'draft'
+    | 'confirmed'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled';
+
+export type Order = {
+    id: number;
+    number: string;
+    status: OrderStatus;
+    status_label: string;
+    currency: string;
+    customer_party_id: number | null;
+    customer_name: string | null;
+    customer_rfc: string | null;
+    requested_pickup_at: string | null;
+    requested_delivery_at: string | null;
+    notes: string | null;
+    items_count: number;
+    shipments_count: number;
+    created_at: string | null;
+};
+
+export type OrderItem = {
+    id: number;
+    description: string;
+    quantity: number;
+    unit: string;
+    weight_grams: number;
+    weight_kg: number;
+    volume_cm3: number;
+    volume_m3: number;
+    hazmat: boolean;
+};
+
+export type OrderShipmentRef = {
+    id: number;
+    number: string;
+    status: string;
+    status_label: string;
+    pieces: number;
+};
+
+export type OrderTotals = {
+    weight_grams: number;
+    volume_cm3: number;
+    pieces: number;
+    hazmat: boolean;
+};
+
+export type OrderDetail = Order & {
+    items: OrderItem[];
+    shipments: OrderShipmentRef[];
+    totals: OrderTotals;
+};
+
+export type OrderLineInput = {
+    description: string;
+    quantity: number;
+    unit: string;
+    weight_kg: string | number;
+    volume_m3: string | number;
+    hazmat: boolean;
+};
+
+export type ShipmentStatus =
+    | 'planned'
+    | 'dispatched'
+    | 'in_transit'
+    | 'delivered'
+    | 'partially_delivered'
+    | 'failed'
+    | 'cancelled';
+
+export type Shipment = {
+    id: number;
+    number: string;
+    status: ShipmentStatus;
+    status_label: string;
+    currency: string;
+    customer_name: string | null;
+    order_id: number | null;
+    order_number: string | null;
+    pickup_location_id: number | null;
+    delivery_location_id: number | null;
+    pickup_snapshot: LocationSnapshot | null;
+    delivery_snapshot: LocationSnapshot | null;
+    weight_grams: number;
+    volume_cm3: number;
+    pieces: number;
+    items_count: number;
+    packages_count: number;
+    created_at: string | null;
+};
+
+export type ShipmentItem = {
+    id: number;
+    description: string;
+    quantity: number;
+    unit: string;
+    weight_grams: number;
+    weight_kg: number;
+    volume_cm3: number;
+    volume_m3: number;
+    hazmat: boolean;
+};
+
+export type ShipmentPackage = {
+    id: number;
+    code: string;
+    status: string;
+    status_label: string;
+    weight_grams: number | null;
+};
+
+export type ShipmentDetail = Shipment & {
+    items: ShipmentItem[];
+    packages: ShipmentPackage[];
+};
+
 export type SearchResult = {
-    type: 'party' | 'location' | 'driver' | 'vehicle';
+    type: 'party' | 'location' | 'driver' | 'vehicle' | 'order' | 'shipment';
     title: string;
     subtitle: string;
     url: string;

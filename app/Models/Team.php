@@ -29,6 +29,11 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Vehicle> $vehicles
  * @property-read Collection<int, Trailer> $trailers
  * @property-read Collection<int, ComplianceDocument> $complianceDocuments
+ * @property-read Collection<int, Order> $orders
+ * @property-read Collection<int, OrderItem> $orderItems
+ * @property-read Collection<int, Shipment> $shipments
+ * @property-read Collection<int, ShipmentItem> $shipmentItems
+ * @property-read Collection<int, Package> $packages
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -167,6 +172,56 @@ class Team extends Model
     public function complianceDocuments(): HasMany
     {
         return $this->hasMany(ComplianceDocument::class);
+    }
+
+    /**
+     * Get all orders created by this team.
+     *
+     * @return HasMany<Order, $this>
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get all order lines of this team.
+     *
+     * @return HasMany<OrderItem, $this>
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Get all shipments of this team.
+     *
+     * @return HasMany<Shipment, $this>
+     */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class);
+    }
+
+    /**
+     * Get all shipment lines of this team.
+     *
+     * @return HasMany<ShipmentItem, $this>
+     */
+    public function shipmentItems(): HasMany
+    {
+        return $this->hasMany(ShipmentItem::class);
+    }
+
+    /**
+     * Get all packages of this team.
+     *
+     * @return HasMany<Package, $this>
+     */
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
     }
 
     /**

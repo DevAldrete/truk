@@ -19,6 +19,9 @@ class SaveLocationRequest extends FormRequest
             'interior_number',
             'neighborhood',
             'references',
+            'latitude',
+            'longitude',
+            'timezone',
         ];
 
         foreach ($nullable as $field) {
@@ -31,6 +34,10 @@ class SaveLocationRequest extends FormRequest
             if ($this->filled($field)) {
                 $this->merge([$field => trim((string) $this->input($field))]);
             }
+        }
+
+        if ($this->filled('timezone')) {
+            $this->merge(['timezone' => trim((string) $this->input('timezone'))]);
         }
     }
 
@@ -56,6 +63,9 @@ class SaveLocationRequest extends FormRequest
             'state' => ['required', 'string', 'max:120'],
             'postal_code' => ['required', 'string', 'max:10'],
             'references' => ['nullable', 'string', 'max:500'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
         ];
     }
 

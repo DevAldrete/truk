@@ -9,9 +9,13 @@ use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Fleet\VehicleDocumentController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Locations\LocationController;
+use App\Http\Controllers\Orders\OrderController;
+use App\Http\Controllers\Orders\OrderShipmentController;
 use App\Http\Controllers\Parties\PartyContactController;
 use App\Http\Controllers\Parties\PartyController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\Shipments\ShipmentController;
+use App\Http\Controllers\Shipments\ShipmentPackageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +78,24 @@ Route::prefix('{current_team}')
             Route::post('trailers/{trailer}/documents', [TrailerDocumentController::class, 'store'])->name('trailers.documents.store');
             Route::patch('trailers/{trailer}/documents/{document}', [TrailerDocumentController::class, 'update'])->name('trailers.documents.update');
             Route::delete('trailers/{trailer}/documents/{document}', [TrailerDocumentController::class, 'destroy'])->name('trailers.documents.destroy');
+        });
+
+        Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
+        Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::patch('orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+        Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+
+        Route::post('orders/{order}/shipments', [OrderShipmentController::class, 'store'])->name('orders.shipments.store');
+
+        Route::get('shipments', [ShipmentController::class, 'index'])->name('shipments.index');
+        Route::get('shipments/{shipment}', [ShipmentController::class, 'show'])->name('shipments.show');
+        Route::patch('shipments/{shipment}', [ShipmentController::class, 'update'])->name('shipments.update');
+        Route::delete('shipments/{shipment}', [ShipmentController::class, 'destroy'])->name('shipments.destroy');
+
+        Route::scopeBindings()->group(function () {
+            Route::post('shipments/{shipment}/packages', [ShipmentPackageController::class, 'store'])->name('shipments.packages.store');
+            Route::delete('shipments/{shipment}/packages/{package}', [ShipmentPackageController::class, 'destroy'])->name('shipments.packages.destroy');
         });
     });
 

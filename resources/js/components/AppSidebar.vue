@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Building2, Container, LayoutGrid, MapPin, Truck, Users } from '@lucide/vue';
+import {
+    Building2,
+    ClipboardList,
+    Container,
+    LayoutGrid,
+    MapPin,
+    Package,
+    Truck,
+    Users,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -18,7 +27,9 @@ import {
 import { t } from '@/lib/i18n';
 import { index as driversIndex } from '@/routes/drivers';
 import { index as locationsIndex } from '@/routes/locations';
+import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
+import { index as shipmentsIndex } from '@/routes/shipments';
 import { index as trailersIndex } from '@/routes/trailers';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import { dashboard } from '@/routes';
@@ -47,6 +58,16 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: t('Locations'),
         href: locationsIndex.url({ current_team: teamSlug.value }),
         icon: MapPin,
+    },
+    {
+        title: t('Orders'),
+        href: ordersIndex.url({ current_team: teamSlug.value }),
+        icon: ClipboardList,
+    },
+    {
+        title: t('Shipments'),
+        href: shipmentsIndex.url({ current_team: teamSlug.value }),
+        icon: Package,
     },
 ]);
 

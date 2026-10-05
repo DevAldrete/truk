@@ -26,6 +26,9 @@ use Illuminate\Support\Carbon;
  * @property string $state
  * @property string $postal_code
  * @property string|null $references
+ * @property float|null $latitude
+ * @property float|null $longitude
+ * @property string|null $timezone
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -43,6 +46,9 @@ use Illuminate\Support\Carbon;
     'state',
     'postal_code',
     'references',
+    'latitude',
+    'longitude',
+    'timezone',
 ])]
 class Location extends Model
 {
@@ -57,5 +63,18 @@ class Location extends Model
     public function party(): BelongsTo
     {
         return $this->belongsTo(Party::class);
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+        ];
     }
 }

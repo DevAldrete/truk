@@ -33,8 +33,12 @@ enum TeamRole: string
                 TeamPermission::CreateInvitation,
                 TeamPermission::CancelInvitation,
                 TeamPermission::ManageCatalog,
+                TeamPermission::ManageOperations,
             ],
-            self::Dispatcher,
+            self::Dispatcher => [
+                TeamPermission::ManageCatalog,
+                TeamPermission::ManageOperations,
+            ],
             self::Warehouse => [
                 TeamPermission::ManageCatalog,
             ],
