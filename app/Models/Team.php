@@ -39,6 +39,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, TripAssignment> $tripAssignments
  * @property-read Collection<int, Stop> $stops
  * @property-read Collection<int, StopShipment> $stopShipments
+ * @property-read Collection<int, DeliveryAttempt> $deliveryAttempts
+ * @property-read Collection<int, DeliveryAttemptLine> $deliveryAttemptLines
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -277,6 +279,26 @@ class Team extends Model
     public function stopShipments(): HasMany
     {
         return $this->hasMany(StopShipment::class);
+    }
+
+    /**
+     * Get all delivery attempts of this team.
+     *
+     * @return HasMany<DeliveryAttempt, $this>
+     */
+    public function deliveryAttempts(): HasMany
+    {
+        return $this->hasMany(DeliveryAttempt::class);
+    }
+
+    /**
+     * Get all delivery attempt lines of this team.
+     *
+     * @return HasMany<DeliveryAttemptLine, $this>
+     */
+    public function deliveryAttemptLines(): HasMany
+    {
+        return $this->hasMany(DeliveryAttemptLine::class);
     }
 
     /**

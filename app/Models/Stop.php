@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property-read Location|null $location
  * @property-read Collection<int, StopShipment> $stopShipments
  * @property-read Collection<int, Shipment> $shipments
+ * @property-read Collection<int, DeliveryAttempt> $deliveryAttempts
  * @property-read Team $team
  */
 #[Fillable([
@@ -96,6 +97,16 @@ class Stop extends Model
             'stop_id',
             'shipment_id',
         )->withTimestamps();
+    }
+
+    /**
+     * Get the delivery attempts recorded at this stop.
+     *
+     * @return HasMany<DeliveryAttempt, $this>
+     */
+    public function deliveryAttempts(): HasMany
+    {
+        return $this->hasMany(DeliveryAttempt::class);
     }
 
     /**

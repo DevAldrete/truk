@@ -84,6 +84,26 @@ class Shipment extends Model
     }
 
     /**
+     * Get the delivery attempts recorded against this shipment.
+     *
+     * @return HasMany<DeliveryAttempt, $this>
+     */
+    public function deliveryAttempts(): HasMany
+    {
+        return $this->hasMany(DeliveryAttempt::class);
+    }
+
+    /**
+     * Get the quantified delivery lines that account for this shipment.
+     *
+     * @return HasMany<DeliveryAttemptLine, $this>
+     */
+    public function deliveryAttemptLines(): HasMany
+    {
+        return $this->hasMany(DeliveryAttemptLine::class);
+    }
+
+    /**
      * Get the order this shipment was created from, when any.
      *
      * @return BelongsTo<Order, $this>

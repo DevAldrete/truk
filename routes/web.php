@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dispatch\DispatchController;
+use App\Http\Controllers\Driver\DeliveryAttemptController;
 use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\Fleet\DriverDocumentController;
 use App\Http\Controllers\Fleet\TrailerController;
@@ -138,6 +139,14 @@ Route::prefix('{current_team}')
             Route::delete('trips/{trip}/stops/{stop}', [StopController::class, 'destroy'])->name('trips.stops.destroy');
             Route::post('trips/{trip}/stops/{stop}/shipments', [StopShipmentController::class, 'store'])->name('trips.stops.shipments.store');
             Route::delete('trips/{trip}/stops/{stop}/shipments/{shipment}', [StopShipmentController::class, 'destroy'])->name('trips.stops.shipments.destroy');
+        });
+
+        // Driver execution portal: a driver runs the trip assigned to them.
+        Route::prefix('driver')->name('driver.')->group(function () {
+            Route::scopeBindings()->group(function () {
+                Route::post('trips/{trip}/stops/{stop}/attempts', [DeliveryAttemptController::class, 'store'])
+                    ->name('trips.stops.attempts.store');
+            });
         });
     });
 
