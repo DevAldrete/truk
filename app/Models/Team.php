@@ -34,6 +34,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Shipment> $shipments
  * @property-read Collection<int, ShipmentItem> $shipmentItems
  * @property-read Collection<int, Package> $packages
+ * @property-read Collection<int, Load> $loads
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -222,6 +223,16 @@ class Team extends Model
     public function packages(): HasMany
     {
         return $this->hasMany(Package::class);
+    }
+
+    /**
+     * Get all loads of this team.
+     *
+     * @return HasMany<Load, $this>
+     */
+    public function loads(): HasMany
+    {
+        return $this->hasMany(Load::class);
     }
 
     /**

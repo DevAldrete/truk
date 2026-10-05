@@ -4,6 +4,7 @@ import {
     Building2,
     ClipboardList,
     Container,
+    Layers,
     LayoutGrid,
     MapPin,
     Package,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { t } from '@/lib/i18n';
 import { index as driversIndex } from '@/routes/drivers';
+import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
@@ -68,6 +70,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: t('Shipments'),
         href: shipmentsIndex.url({ current_team: teamSlug.value }),
         icon: Package,
+    },
+    {
+        title: t('Loads'),
+        href: loadsIndex.url({ current_team: teamSlug.value }),
+        icon: Layers,
     },
 ]);
 

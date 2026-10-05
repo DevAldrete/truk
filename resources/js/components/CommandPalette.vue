@@ -3,6 +3,7 @@ import { router } from '@inertiajs/vue3';
 import {
     Building2,
     ClipboardList,
+    Layers,
     LayoutGrid,
     MapPin,
     Package,
@@ -22,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 import { dashboard, search as searchRoute } from '@/routes';
 import { index as driversIndex } from '@/routes/drivers';
+import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
@@ -79,6 +81,12 @@ const commands = computed<Item[]>(() => [
         url: shipmentsIndex.url({ current_team: props.teamSlug }),
     },
     {
+        key: 'loads',
+        label: t('Loads'),
+        icon: Layers,
+        url: loadsIndex.url({ current_team: props.teamSlug }),
+    },
+    {
         key: 'drivers',
         label: t('Drivers'),
         icon: Users,
@@ -125,7 +133,9 @@ const items = computed<Item[]>(() => {
                           ? ClipboardList
                           : result.type === 'shipment'
                             ? Package
-                            : Truck,
+                            : result.type === 'load'
+                              ? Layers
+                              : Truck,
             url: result.url,
         })),
     ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Driver;
+use App\Models\Load;
 use App\Models\Location;
 use App\Models\Order;
 use App\Models\Party;
@@ -117,6 +118,21 @@ class SearchController extends Controller
                 ]),
             ]);
 
+        $loads = Load::query()
+            ->whereRaw('LOWER(number) LIKE ?', [$needle])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (Load $load) => [
+                'type' => 'load',
+                'title' => $load->number,
+                'subtitle' => $load->status->label(),
+                'url' => route('loads.show', [
+                    'current_team' => $current_team->slug,
+                    'load' => $load->id,
+                ]),
+            ]);
+
         $shipments = Shipment::query()
             ->where(fn ($query) => $query
                 ->whereRaw('LOWER(number) LIKE ?', [$needle])
@@ -141,6 +157,7 @@ class SearchController extends Controller
                 ->concat($vehicles)
                 ->concat($orders)
                 ->concat($shipments)
+                ->concat($loads)
                 ->values()
                 ->all(),
         ]);

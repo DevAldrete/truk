@@ -67,7 +67,7 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 | **P1a**  | Parties (+contacts), Locations, ⌘K command palette                                              | ✅ Done    |
 | **P1b**  | Drivers, Vehicles, Trailers, Compliance documents                                               | ✅ Done    |
 | **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
-| **P3**   | Planning & dispatch: loads, trips, stops, assignments, capacity (planned+measured), conflicts    | ⬜         |
+| **P3**   | Planning & dispatch: loads ✅, trips, stops, assignments, capacity, conflicts                    | 🚧 In progress |
 | **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ⬜         |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
@@ -428,6 +428,18 @@ every downstream record the fields compliance and routing will need.
 ### P3 — planning and dispatch
 
 Goal: answer _"can this unit move this load, legally and physically, and is it free?"_
+
+**Delivered (slice 1):**
+
+- `loads` (group shipments for planning) with server-assigned numbers, a
+  `LoadStatus` transition map, and `shipments.load_id`.
+- Attach/detach shipments to a load through scoped nested routes; planner UI with
+  per-load totals; search, sidebar and ⌘K entries; bilingual copy.
+- Feature tests: CRUD, grouping, transitions, scoped bindings, authorization,
+  tenant isolation.
+
+**Remaining:** trips + assignments (with the resource-conflict guard), stops +
+`stop_shipments` (ordered sequencing), the capacity guard, and the dispatch board.
 
 - **Entities:** `loads`, `trips`, `trip_assignments`, `stops`, `stop_shipments`,
   `trip_compliance` (payload snapshot), `resource_reservations`.

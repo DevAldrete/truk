@@ -259,8 +259,53 @@ export type ShipmentDetail = Shipment & {
     packages: ShipmentPackage[];
 };
 
+export type LoadStatus =
+    | 'draft'
+    | 'planned'
+    | 'in_transit'
+    | 'completed'
+    | 'cancelled';
+
+export type LoadShipmentRef = {
+    id: number;
+    number: string;
+    status: string;
+    status_label: string;
+    customer_name: string | null;
+    pieces: number;
+    weight_grams: number;
+};
+
+export type Load = {
+    id: number;
+    number: string;
+    status: LoadStatus;
+    status_label: string;
+    notes: string | null;
+    shipments_count: number;
+    created_at: string | null;
+};
+
+export type LoadTotals = {
+    weight_grams: number;
+    volume_cm3: number;
+    pieces: number;
+};
+
+export type LoadDetail = Load & {
+    shipments: LoadShipmentRef[];
+    totals: LoadTotals;
+};
+
 export type SearchResult = {
-    type: 'party' | 'location' | 'driver' | 'vehicle' | 'order' | 'shipment';
+    type:
+        | 'party'
+        | 'location'
+        | 'driver'
+        | 'vehicle'
+        | 'order'
+        | 'shipment'
+        | 'load';
     title: string;
     subtitle: string;
     url: string;

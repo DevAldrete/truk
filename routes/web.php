@@ -7,6 +7,8 @@ use App\Http\Controllers\Fleet\TrailerController;
 use App\Http\Controllers\Fleet\TrailerDocumentController;
 use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Fleet\VehicleDocumentController;
+use App\Http\Controllers\Loads\LoadController;
+use App\Http\Controllers\Loads\LoadShipmentController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Locations\LocationController;
 use App\Http\Controllers\Orders\OrderController;
@@ -96,6 +98,17 @@ Route::prefix('{current_team}')
         Route::scopeBindings()->group(function () {
             Route::post('shipments/{shipment}/packages', [ShipmentPackageController::class, 'store'])->name('shipments.packages.store');
             Route::delete('shipments/{shipment}/packages/{package}', [ShipmentPackageController::class, 'destroy'])->name('shipments.packages.destroy');
+        });
+
+        Route::get('loads', [LoadController::class, 'index'])->name('loads.index');
+        Route::post('loads', [LoadController::class, 'store'])->name('loads.store');
+        Route::get('loads/{load}', [LoadController::class, 'show'])->name('loads.show');
+        Route::patch('loads/{load}', [LoadController::class, 'update'])->name('loads.update');
+        Route::delete('loads/{load}', [LoadController::class, 'destroy'])->name('loads.destroy');
+
+        Route::scopeBindings()->group(function () {
+            Route::post('loads/{load}/shipments', [LoadShipmentController::class, 'store'])->name('loads.shipments.store');
+            Route::delete('loads/{load}/shipments/{shipment}', [LoadShipmentController::class, 'destroy'])->name('loads.shipments.destroy');
         });
     });
 

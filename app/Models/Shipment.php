@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $team_id
  * @property int|null $order_id
+ * @property int|null $load_id
  * @property string $number
  * @property ShipmentStatus $status
  * @property string $currency
@@ -37,12 +38,14 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, ShipmentItem> $items
  * @property-read Collection<int, Package> $packages
  * @property-read Order|null $order
+ * @property-read Load|null $loadGroup
  * @property-read Location|null $pickupLocation
  * @property-read Location|null $deliveryLocation
  * @property-read Team $team
  */
 #[Fillable([
     'order_id',
+    'load_id',
     'number',
     'status',
     'currency',
@@ -88,6 +91,18 @@ class Shipment extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Get the load this shipment is grouped into, when any.
+     *
+     * Named `loadGroup` because `load()` is reserved by Eloquent.
+     *
+     * @return BelongsTo<Load, $this>
+     */
+    public function loadGroup(): BelongsTo
+    {
+        return $this->belongsTo(Load::class, 'load_id');
     }
 
     /**
