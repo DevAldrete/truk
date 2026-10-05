@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import CommandPalette from '@/components/CommandPalette.vue';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -13,6 +16,10 @@ type Props = {
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
 });
+
+const page = usePage();
+
+const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
 </script>
 
 <template>
@@ -23,5 +30,6 @@ withDefaults(defineProps<Props>(), {
             <slot />
         </AppContent>
         <Toaster />
+        <CommandPalette v-if="teamSlug" :team-slug="teamSlug" />
     </AppShell>
 </template>

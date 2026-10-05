@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { LayoutGrid } from '@lucide/vue';
+import { Building2, LayoutGrid, MapPin } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -16,6 +16,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { t } from '@/lib/i18n';
+import { index as locationsIndex } from '@/routes/locations';
+import { index as partiesIndex } from '@/routes/parties';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
@@ -25,11 +27,23 @@ const dashboardUrl = computed(() =>
     page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
 );
 
+const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
+
 const mainNavItems = computed<NavItem[]>(() => [
     {
         title: t('Dashboard'),
         href: dashboardUrl.value,
         icon: LayoutGrid,
+    },
+    {
+        title: t('Parties'),
+        href: partiesIndex.url({ current_team: teamSlug.value }),
+        icon: Building2,
+    },
+    {
+        title: t('Locations'),
+        href: locationsIndex.url({ current_team: teamSlug.value }),
+        icon: MapPin,
     },
 ]);
 </script>
