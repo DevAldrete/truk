@@ -1,0 +1,19 @@
+{
+    "name": "Truk Driver",
+    "short_name": "Truk",
+    "description": "Run your assigned trips, scans, and proof of delivery.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#ffffff",
+    "theme_color": "#111827",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ]
+}

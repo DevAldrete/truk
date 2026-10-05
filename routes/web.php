@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dispatch\DispatchController;
 use App\Http\Controllers\Driver\DeliveryAttemptController;
+use App\Http\Controllers\Driver\DriverPortalController;
 use App\Http\Controllers\Driver\ExpenseController;
 use App\Http\Controllers\Driver\IncidentController as DriverIncidentController;
 use App\Http\Controllers\Driver\PodEvidenceController;
@@ -151,6 +152,9 @@ Route::prefix('{current_team}')
 
         // Driver execution portal: a driver runs the trip assigned to them.
         Route::prefix('driver')->name('driver.')->group(function () {
+            Route::get('/', [DriverPortalController::class, 'index'])->name('index');
+            Route::get('trips/{trip}', [DriverPortalController::class, 'show'])->name('trips.show');
+
             Route::scopeBindings()->group(function () {
                 Route::post('trips/{trip}/stops/{stop}/attempts', [DeliveryAttemptController::class, 'store'])
                     ->name('trips.stops.attempts.store');

@@ -7,6 +7,7 @@ import {
     Layers,
     LayoutGrid,
     MapPin,
+    Navigation,
     Package,
     Route,
     Truck,
@@ -28,6 +29,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { t } from '@/lib/i18n';
+import { index as driverIndex } from '@/routes/driver';
 import { index as driversIndex } from '@/routes/drivers';
 import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
@@ -52,6 +54,18 @@ const dispatchUrl = computed(() =>
 
 const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
 
+const driverUrl = computed(() =>
+    page.props.currentTeam
+        ? driverIndex.url({ current_team: teamSlug.value })
+        : '/',
+);
+
+const canDrive = computed(() =>
+    ['owner', 'admin', 'dispatcher', 'driver'].includes(
+        page.props.currentTeam?.role ?? '',
+    ),
+);
+
 const mainNavItems = computed<NavItem[]>(() => [
     {
         title: t('Dashboard'),
@@ -63,6 +77,15 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: dispatchUrl.value,
         icon: Waypoints,
     },
+    ...(canDrive.value
+        ? [
+              {
+                  title: t('Driver portal'),
+                  href: driverUrl.value,
+                  icon: Navigation,
+              },
+          ]
+        : []),
     {
         title: t('Parties'),
         href: partiesIndex.url({ current_team: teamSlug.value }),
