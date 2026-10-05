@@ -4,7 +4,7 @@ Working document: where the project stands, what comes next, and the decisions t
 are already locked in. Read this before starting a session. `README.md` holds the
 product scope, `IDEA.md` the domain rules; this file holds the _execution_ state.
 
-Last updated after the P1a milestone.
+Last updated after the P1b milestone.
 
 ---
 
@@ -62,15 +62,16 @@ apply, its stack does not.
 | ------- | -------------------------------------------------------------------------- | ---------- |
 | **P0**  | Bilingual shell (ES/EN), locales, operational roles, tenancy foundation    | ✅ Done    |
 | **P1a** | Parties (+contacts), Locations, ⌘K command palette                         | ✅ Done    |
-| **P1b** | Drivers, Vehicles, Trailers, Compliance documents                          | ⏭ **Next** |
-| **P2**  | Order intake: service requests → shipments/items/packages                  | ⬜         |
+| **P1b** | Drivers, Vehicles, Trailers, Compliance documents                          | ✅ Done    |
+| **P2**  | Order intake: service requests → shipments/items/packages                  | ⏭ **Next** |
 | **P3**  | Planning and dispatch: loads, trips, stops, assignments, state machines    | ⬜         |
 | **P4**  | Driver execution: portal, delivery attempts, POD, expenses                 | ⬜         |
 | **P5**  | Hardening: tracking timeline, notifications/outbox, audit UI, file storage | ⬜         |
 | **P6**  | Integrations: CFDI import, toll catalog, customer portal                   | ⬜         |
 
 Milestone from `README.md`: _create a customer and location → create an order and
-shipment → list the records within the correct tenant._ P1a covers the first half.
+shipment → list the records within the correct tenant._ P1a covers the master data and
+P1b the fleet; **P2 is the remaining half of the milestone** (order → shipment → list).
 
 ---
 
@@ -158,6 +159,26 @@ Break one of these and the bug will be silent and expensive.
 - Deleting a record must not be a dead end. Since the RFC is released on delete, a
   user can re-create the party; that is the reason no "restore" UI exists yet.
 
+### 4.5 Computed in P1b
+
+- **One controller per documentable parent.** A single morph controller cannot
+  type-hint `Driver`, `Vehicle`, and `Trailer` at once, and scoped bindings only
+  resolve the parent when it is a typed method argument. `DriverDocumentController`,
+  `VehicleDocumentController`, and `TrailerDocumentController` each declare their
+  parent, so `Route::scopeBindings()` returns 404 for a document reached through the
+  wrong unit.
+- **Capacity is stored as grams and cm³.** The form takes kg/m³,
+  `prepareForValidation()` converts, and `max_payload_kg` / `max_volume_m3` are
+  read-only accessors for display. Validation keys stay on the kg/m³ inputs so the
+  errors land on the field the user edited.
+- **A live plate or licence cannot be reused; a deleted one can.** Same partial-index
+  rule as the RFC (see §4.4).
+- **Compliance documents are metadata only in P1b.** No file column; the upload lands
+  in P5 with private storage and signed URLs. `expires_at` is what the warning reads.
+- **The dashboard reads the current tenant through `TeamContext`.** It takes no `Team`
+  argument; `EnsureTeamMembership` has already set the context, and the
+  `BelongsToTeam` scope does the filtering.
+
 ---
 
 ## 5. Domain logic to honour (the trap list)
@@ -200,7 +221,7 @@ Carry these forward into P2–P4. Each one has burned a real TMS.
 
 ---
 
-## 6. Next: P1b — fleet and compliance
+## 6. P1b — fleet and compliance (delivered)
 
 Goal: the resources and the legality data that P3 needs in order to answer _"is this
 unit allowed to roll today, and is it free?"_
@@ -409,19 +430,22 @@ routing/ETA providers, billing.
 ```
 app/Concerns/BelongsToTeam.php        tenancy scope + team_id fill + team() relation
 app/Data/TeamContext.php              per-request/job tenant, set by EnsureTeamMembership
-app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, …
+app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, ComplianceDocumentType
 app/Http/Controllers/Parties|Locations|SearchController.php
+app/Http/Controllers/Fleet/           Driver|Vehicle|Trailer (+ one document controller per parent)
 app/Http/Middleware/                  EnsureTeamMembership (priority: before binding), SetLocale
 app/Policies/TeamPolicy.php           manageCatalog
 app/Rules/Rfc.php                     RFC shape (no check digit yet)
 lang/es.json                          the interface dictionary (English key → Spanish)
-lang/{es,en}/                         roles, party_types, validation, auth, passwords
+lang/{es,en}/                         roles, party_types, compliance_document_types, validation, auth, passwords
 resources/js/lib/i18n.ts              t() and the global $t
 resources/js/composables/useFilteredList.ts   URL-backed, debounced list filtering
 resources/js/components/CommandPalette.vue    ⌘K: nav commands + server search
-resources/js/components/catalog/      master–detail building blocks
-resources/js/pages/                   parties/, locations/ (one page per area)
+resources/js/components/catalog/      CatalogListLayout, party/location/fleet detail + form sheets,
+                                      ComplianceDocsSection + DocumentRow + DocumentForm
+resources/js/pages/                   parties/, locations/, fleet/{drivers,vehicles,trailers}
 tests/Feature/Tenancy/                trait behaviour + the model convention test
+tests/Feature/Fleet/                  drivers, vehicles, trailers, compliance documents
 ```
 
 Use `php artisan make:*` for new files, `--no-interaction`, and follow the sibling
