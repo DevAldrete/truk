@@ -2,8 +2,11 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fleet\DriverController;
+use App\Http\Controllers\Fleet\DriverDocumentController;
 use App\Http\Controllers\Fleet\TrailerController;
+use App\Http\Controllers\Fleet\TrailerDocumentController;
 use App\Http\Controllers\Fleet\VehicleController;
+use App\Http\Controllers\Fleet\VehicleDocumentController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Locations\LocationController;
 use App\Http\Controllers\Parties\PartyContactController;
@@ -58,6 +61,20 @@ Route::prefix('{current_team}')
         Route::get('trailers/{trailer}', [TrailerController::class, 'show'])->name('trailers.show');
         Route::patch('trailers/{trailer}', [TrailerController::class, 'update'])->name('trailers.update');
         Route::delete('trailers/{trailer}', [TrailerController::class, 'destroy'])->name('trailers.destroy');
+
+        Route::scopeBindings()->group(function () {
+            Route::post('drivers/{driver}/documents', [DriverDocumentController::class, 'store'])->name('drivers.documents.store');
+            Route::patch('drivers/{driver}/documents/{document}', [DriverDocumentController::class, 'update'])->name('drivers.documents.update');
+            Route::delete('drivers/{driver}/documents/{document}', [DriverDocumentController::class, 'destroy'])->name('drivers.documents.destroy');
+
+            Route::post('vehicles/{vehicle}/documents', [VehicleDocumentController::class, 'store'])->name('vehicles.documents.store');
+            Route::patch('vehicles/{vehicle}/documents/{document}', [VehicleDocumentController::class, 'update'])->name('vehicles.documents.update');
+            Route::delete('vehicles/{vehicle}/documents/{document}', [VehicleDocumentController::class, 'destroy'])->name('vehicles.documents.destroy');
+
+            Route::post('trailers/{trailer}/documents', [TrailerDocumentController::class, 'store'])->name('trailers.documents.store');
+            Route::patch('trailers/{trailer}/documents/{document}', [TrailerDocumentController::class, 'update'])->name('trailers.documents.update');
+            Route::delete('trailers/{trailer}/documents/{document}', [TrailerDocumentController::class, 'destroy'])->name('trailers.documents.destroy');
+        });
     });
 
 Route::middleware(['auth'])->group(function () {

@@ -13,6 +13,7 @@ const props = defineProps<{
     drivers: Paginated<Driver>;
     filters: { search: string | null };
     carriers: Option[];
+    documentTypes: Option[];
     driver?: Driver;
     can: { manage: boolean };
 }>();
@@ -92,6 +93,12 @@ const term = ref(props.filters.search ?? '');
                     >
                         {{ $t('Expired') }}
                     </span>
+                    <span
+                        v-else-if="item.has_expired_documents"
+                        class="shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600"
+                    >
+                        {{ $t('Expires soon') }}
+                    </span>
                 </Link>
             </li>
 
@@ -107,6 +114,7 @@ const term = ref(props.filters.search ?? '');
                 :driver="driver"
                 :team-slug="teamSlug"
                 :carriers="carriers"
+                :document-types="documentTypes"
                 :can-manage="can.manage"
             />
 

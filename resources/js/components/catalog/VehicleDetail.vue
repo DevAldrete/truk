@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
+import ComplianceDocsSection from '@/components/catalog/ComplianceDocsSection.vue';
 import DeleteButton from '@/components/catalog/DeleteButton.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +14,18 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { destroy, update } from '@/routes/vehicles';
+import {
+    destroy as destroyDocument,
+    store as storeDocument,
+    update as updateDocument,
+} from '@/routes/vehicles/documents';
 import type { Option, Vehicle } from '@/types';
 
 const props = defineProps<{
     vehicle: Vehicle;
     teamSlug: string;
     carriers: Option[];
+    documentTypes: Option[];
     canManage: boolean;
 }>();
 
@@ -200,6 +207,34 @@ const save = () => {
                     </Button>
                 </div>
             </form>
+
+            <ComplianceDocsSection
+                :documents="vehicle.documents ?? []"
+                :types="documentTypes"
+                :store-url="
+                    storeDocument.url({
+                        current_team: teamSlug,
+                        vehicle: vehicle.id,
+                    })
+                "
+                :can-manage="canManage"
+                :update-url="
+                    (document) =>
+                        updateDocument.url({
+                            current_team: teamSlug,
+                            vehicle: vehicle.id,
+                            document: document.id,
+                        })
+                "
+                :destroy-url="
+                    (document) =>
+                        destroyDocument.url({
+                            current_team: teamSlug,
+                            vehicle: vehicle.id,
+                            document: document.id,
+                        })
+                "
+            />
         </div>
     </div>
 </template>

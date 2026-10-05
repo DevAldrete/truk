@@ -5,9 +5,11 @@ namespace App\Models;
 use App\Concerns\BelongsToTeam;
 use Database\Factories\DriverFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -24,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property-read Collection<int, ComplianceDocument> $documents
  * @property-read Party|null $carrierParty
  * @property-read Team $team
  */
@@ -41,6 +44,16 @@ class Driver extends Model
     public function carrierParty(): BelongsTo
     {
         return $this->belongsTo(Party::class, 'carrier_party_id');
+    }
+
+    /**
+     * Get the compliance documents attached to this driver.
+     *
+     * @return MorphMany<ComplianceDocument, $this>
+     */
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(ComplianceDocument::class, 'documentable');
     }
 
     /**

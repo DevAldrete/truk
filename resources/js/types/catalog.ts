@@ -73,6 +73,9 @@ export type Driver = {
     license_expired: boolean;
     carrier_party_id: number | null;
     carrier_name: string | null;
+    documents_count: number;
+    has_expired_documents: boolean;
+    documents?: ComplianceDocument[];
 };
 
 export type Vehicle = {
@@ -86,6 +89,9 @@ export type Vehicle = {
     max_payload_kg: number;
     max_volume_cm3: number | null;
     max_volume_m3: number | null;
+    documents_count: number;
+    has_expired_documents: boolean;
+    documents?: ComplianceDocument[];
 };
 
 export type Trailer = {
@@ -99,6 +105,21 @@ export type Trailer = {
     max_payload_kg: number;
     max_volume_cm3: number | null;
     max_volume_m3: number | null;
+    documents_count: number;
+    has_expired_documents: boolean;
+    documents?: ComplianceDocument[];
+};
+
+export type ComplianceDocument = {
+    id: number;
+    type: string;
+    type_label: string;
+    number: string | null;
+    issued_at: string | null;
+    expires_at: string | null;
+    expired: boolean;
+    expiring_soon: boolean;
+    notes: string | null;
 };
 
 export type SearchResult = {

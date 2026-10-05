@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Fleet;
 
+use App\Enums\ComplianceDocumentType;
 use App\Enums\PartyType;
 use App\Enums\TeamPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Fleet\SaveTrailerRequest;
+use App\Models\ComplianceDocument;
 use App\Models\Team;
 use App\Models\Trailer;
 use Illuminate\Http\RedirectResponse;
@@ -108,7 +110,7 @@ class TrailerController extends Controller
 
         return [
             'trailers' => Trailer::query()
-                ->with('carrierParty:id,name')
+                ->with(['carrierParty:id,name', 'documents'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
                     ->orWhereRaw('LOWER(plate) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -126,6 +128,7 @@ class TrailerController extends Controller
                 ->get(['id', 'name'])
                 ->map(fn ($party) => ['value' => (string) $party->id, 'label' => $party->name])
                 ->all(),
+            'documentTypes' => ComplianceDocumentType::options(),
             'can' => [
                 'manage' => $request->user()->hasTeamPermission($team, TeamPermission::ManageCatalog),
             ],
@@ -150,6 +153,8 @@ class TrailerController extends Controller
             'max_payload_kg' => $trailer->max_payload_kg,
             'max_volume_cm3' => $trailer->max_volume_cm3,
             'max_volume_m3' => $trailer->max_volume_m3,
+            'documents_count' => $trailer->documents->count(),
+            'has_expired_documents' => $trailer->documents->contains(fn (ComplianceDocument $document) => $document->expires_at?->isPast() ?? false),
         ];
     }
 
@@ -160,8 +165,15 @@ class TrailerController extends Controller
      */
     protected function detail(Trailer $trailer): array
     {
-        $trailer->loadMissing('carrierParty:id,name');
+        $trailer->loadMissing(['carrierParty:id,name', 'documents']);
 
-        return $this->summary($trailer);
+        return [
+            ...$this->summary($trailer),
+            'documents' => $trailer->documents
+                ->sortBy('expires_at')
+                ->map(fn (ComplianceDocument $document) => $document->toSummary())
+                ->values()
+                ->all(),
+        ];
     }
 }

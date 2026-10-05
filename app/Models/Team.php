@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Driver> $drivers
  * @property-read Collection<int, Vehicle> $vehicles
  * @property-read Collection<int, Trailer> $trailers
+ * @property-read Collection<int, ComplianceDocument> $complianceDocuments
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -156,6 +157,16 @@ class Team extends Model
     public function trailers(): HasMany
     {
         return $this->hasMany(Trailer::class);
+    }
+
+    /**
+     * Get all compliance documents of this team.
+     *
+     * @return HasMany<ComplianceDocument, $this>
+     */
+    public function complianceDocuments(): HasMany
+    {
+        return $this->hasMany(ComplianceDocument::class);
     }
 
     /**

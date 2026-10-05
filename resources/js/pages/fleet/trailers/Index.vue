@@ -13,6 +13,7 @@ const props = defineProps<{
     trailers: Paginated<Trailer>;
     filters: { search: string | null };
     carriers: Option[];
+    documentTypes: Option[];
     trailer?: Trailer;
     can: { manage: boolean };
 }>();
@@ -83,6 +84,12 @@ const term = ref(props.filters.search ?? '');
                             {{ item.carrier_name }}
                         </p>
                     </div>
+                    <span
+                        v-if="item.has_expired_documents"
+                        class="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                    >
+                        {{ $t('Expired') }}
+                    </span>
                 </Link>
             </li>
 
@@ -98,6 +105,7 @@ const term = ref(props.filters.search ?? '');
                 :trailer="trailer"
                 :team-slug="teamSlug"
                 :carriers="carriers"
+                :document-types="documentTypes"
                 :can-manage="can.manage"
             />
 

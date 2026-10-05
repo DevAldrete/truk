@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Fleet;
 
+use App\Enums\ComplianceDocumentType;
 use App\Enums\PartyType;
 use App\Enums\TeamPermission;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Fleet\SaveDriverRequest;
+use App\Models\ComplianceDocument;
 use App\Models\Driver;
 use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
@@ -91,7 +93,7 @@ class DriverController extends Controller
 
         return [
             'drivers' => Driver::query()
-                ->with('carrierParty:id,name')
+                ->with(['carrierParty:id,name', 'documents'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
                     ->orWhereRaw('LOWER(phone) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -109,6 +111,7 @@ class DriverController extends Controller
                 ->get(['id', 'name'])
                 ->map(fn ($party) => ['value' => (string) $party->id, 'label' => $party->name])
                 ->all(),
+            'documentTypes' => ComplianceDocumentType::options(),
             'can' => [
                 'manage' => $request->user()->hasTeamPermission($team, TeamPermission::ManageCatalog),
             ],
@@ -131,6 +134,8 @@ class DriverController extends Controller
             'license_expired' => $driver->license_expires_at?->isPast() ?? false,
             'carrier_party_id' => $driver->carrier_party_id,
             'carrier_name' => $driver->carrierParty?->name,
+            'documents_count' => $driver->documents->count(),
+            'has_expired_documents' => $driver->documents->contains(fn (ComplianceDocument $document) => $document->expires_at?->isPast() ?? false),
         ];
     }
 
@@ -141,8 +146,15 @@ class DriverController extends Controller
      */
     protected function detail(Driver $driver): array
     {
-        $driver->loadMissing('carrierParty:id,name');
+        $driver->loadMissing(['carrierParty:id,name', 'documents']);
 
-        return $this->summary($driver);
+        return [
+            ...$this->summary($driver),
+            'documents' => $driver->documents
+                ->sortBy('expires_at')
+                ->map(fn (ComplianceDocument $document) => $document->toSummary())
+                ->values()
+                ->all(),
+        ];
     }
 }
