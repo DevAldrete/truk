@@ -4,7 +4,9 @@ Working document: where the project stands, what comes next, and the decisions t
 are already locked in. Read this before starting a session. `README.md` holds the
 product scope, `IDEA.md` the domain rules; this file holds the _execution_ state.
 
-Last updated after the P1b milestone.
+Last updated after the P1b milestone, with the scope locked to a **full-lifecycle
+TMS**: fiscal compliance (SAT/CFDI/Carta Porte), billing/settlement, and route
+optimization are now in scope, not deferred.
 
 ---
 
@@ -12,8 +14,9 @@ Last updated after the P1b milestone.
 
 **Stack (settled — do not re-litigate):** Laravel 13 + Inertia 3 + Vue 3 +
 Fortify + Wayfinder + Tailwind 4 + shadcn-vue (reka-ui) + Pest 5 + Larastan 7.
-`IDEA.md` was written for a Node stack (Clerk/Zod/Drizzle); its **domain rules**
-apply, its stack does not.
+PostgreSQL is the production source of truth (`database.sqlite` is the local dev
+DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
+**domain rules** apply, its stack does not.
 
 | Task             | Command                                                          |
 | ---------------- | ---------------------------------------------------------------- |
@@ -58,16 +61,32 @@ apply, its stack does not.
 
 ## 2. Status board
 
-| Phase   | Scope                                                                      | Status     |
-| ------- | -------------------------------------------------------------------------- | ---------- |
-| **P0**  | Bilingual shell (ES/EN), locales, operational roles, tenancy foundation    | ✅ Done    |
-| **P1a** | Parties (+contacts), Locations, ⌘K command palette                         | ✅ Done    |
-| **P1b** | Drivers, Vehicles, Trailers, Compliance documents                          | ✅ Done    |
-| **P2**  | Order intake: service requests → shipments/items/packages                  | ⏭ **Next** |
-| **P3**  | Planning and dispatch: loads, trips, stops, assignments, state machines    | ⬜         |
-| **P4**  | Driver execution: portal, delivery attempts, POD, expenses                 | ⬜         |
-| **P5**  | Hardening: tracking timeline, notifications/outbox, audit UI, file storage | ⬜         |
-| **P6**  | Integrations: CFDI import, toll catalog, customer portal                   | ⬜         |
+| Phase    | Scope                                                                                          | Status     |
+| -------- | ---------------------------------------------------------------------------------------------- | ---------- |
+| **P0**   | Bilingual shell (ES/EN), locales, operational roles, tenancy foundation                         | ✅ Done    |
+| **P1a**  | Parties (+contacts), Locations, ⌘K command palette                                              | ✅ Done    |
+| **P1b**  | Drivers, Vehicles, Trailers, Compliance documents                                               | ✅ Done    |
+| **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
+| **P3**   | Planning & dispatch: loads, trips, stops, assignments, capacity (planned+measured), conflicts    | ⬜         |
+| **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ⬜         |
+| **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
+| **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
+| **P7**   | Pricing & billing: rate engine, accessorials, fuel surcharge, 3-way match, invoicing, settlement | ⬜         |
+| **P8**   | Optimization: routing, multi-stop sequencing, LTL→FTL consolidation, constraint engine           | ⬜         |
+| **P9**   | Integrations: EDI, ERP/WMS, toll catalog + telepeaje, customer/carrier portal, SaaS billing      | ⬜         |
+| **P10**  | Analytics & KPIs: OTIF, cost per ton/km, utilization, safety, carrier rating                     | ⬜         |
+
+**Ordering rationale.** The audit guide treats SAT/Carta Porte as an upstream
+gatekeeper, but building a PAC integration before the operational records exist
+would be premature. We therefore split compliance:
+
+- The **compliance data model and validation rules** land with the operational
+  entities (P2/P3) so every shipment/trip carries the fields and the hard gate has
+  something to validate.
+- The **certified issuance workflow** (PAC stamping/cancellation, XML) lands in P6,
+  behind an adapter boundary designed in P3.
+- **Coordinates and timezone** must land by P2/P3: routing, ETA, geofence, and
+  toll costing are impossible without them.
 
 Milestone from `README.md`: _create a customer and location → create an order and
 shipment → list the records within the correct tenant._ P1a covers the master data and
@@ -96,16 +115,29 @@ Break one of these and the bug will be silent and expensive.
 4. **Factories always declare the tenant:** `Party::factory()->for($team)->create()`
    (chain twice for a nested record: `->for($team)->for($party)`).
 5. **Every new model in `app/Models` must use `BelongsToTeam`** or be added to the
-   allow-list in `tests/Feature/Tenancy/TenancyConventionsTest.php`. The test is the
-   enforcement; the allow-list is a deliberate, reviewable exception.
+   allow-list in `tests/Feature/Tenancy/TenancyConventionsTest.php`. The only legitimate
+   allow-list members are **global catalogs** (see #10). The test is the enforcement.
 6. **Money is integer minor units; weight is integer grams; volume is integer cm³.**
    No floats on anything summed or compared. Convert at the form boundary only.
+   **Every money value carries a currency** (MXN default; cross-border needs more).
 7. **The database is the last line of defence.** Prefer a constraint over app logic,
    and when a soft delete is involved use a **partial unique index**
    (`WHERE deleted_at IS NULL`) so a deleted record never reserves a value forever.
    Validation rules must agree with the constraint — P1a shipped a bug where they did
    not (see §4.4).
 8. **Every user-facing string is bilingual.** The English text _is_ the key.
+9. **Compliance gates dispatch.** A trip/shipment cannot be dispatched until the
+   fiscal/transport payload validates. Overrides are permissioned and record who,
+   when, and why — never silent.
+10. **Global reference data is not tenant data.** SAT/SCT claves, units of measure,
+    tariff codes, and toll booths are shared, versioned reference tables. They are
+    queried without `BelongsToTeam` and must never be mutated by tenant requests.
+11. **Fiscal and delivery evidence is append-only and files are private.** A stamped
+    CFDI, a POD, a scan, and a tracking event are never overwritten; corrections
+    create a new record. Files live on a private disk behind short-lived URLs.
+12. **Every external provider is behind an interface.** PAC, maps/routing, telematics,
+    notifications, storage, and billing all sit behind a contract with a fake for the
+    test suite. No vendor SDK leaks into domain code.
 
 ---
 
@@ -137,7 +169,8 @@ Break one of these and the bug will be silent and expensive.
 - `Party.type` is single-valued (customer | carrier | supplier). A company that is
   both needs two records until a real case appears.
 - Addresses are free text except the individual fields; **no coordinates, no
-  timezone on locations** yet.
+  timezone on locations** yet. _(Superseded by §4.6: coordinates and timezone land
+  in P2 so routing, ETA, geofencing, and toll costing are possible.)_
 - UI term: Party = **Tercero** (cliente / transportista / proveedor); Location =
   **Ubicación**.
 
@@ -179,11 +212,30 @@ Break one of these and the bug will be silent and expensive.
   argument; `EnsureTeamMembership` has already set the context, and the
   `BelongsToTeam` scope does the filtering.
 
+### 4.6 Full-scope decision (this change)
+
+The product is no longer a lean dispatch tool. Locked in:
+
+- **Tax/fiscal compliance is in scope.** CFDI 4.0 (Ingreso/Traslado) + Carta Porte
+  3.0/3.1 through a PAC adapter; we prepare and validate payloads, the provider
+  stamps and cancels. We **never compute taxes ourselves**.
+- **Billing/settlement is in scope.** Rate engine, accessorials, fuel surcharge,
+  3-way match, customer invoicing, and carrier settlement.
+- **Optimization is in scope.** Routing, multi-stop sequencing, consolidation, and a
+  constraint engine — but optimization is **advisory and guarded**: it proposes, the
+  dispatcher confirms, and capacity/compliance hard gates still apply.
+- **The driver app is an offline-first PWA**, not a native app, for now. It must
+  work with no signal and sync idempotently.
+- **Locations gain coordinates and a timezone** (P2) because routing/ETA/geofence/toll
+  costing depend on them.
+- **Global catalogs exist** outside tenant scope (SAT, SCT, toll booths, units).
+- **Multi-currency is anticipated** in the money model even if MXN ships first.
+
 ---
 
 ## 5. Domain logic to honour (the trap list)
 
-Carry these forward into P2–P4. Each one has burned a real TMS.
+Carry these forward into every phase. Each one has burned a real TMS.
 
 1. **Status derivation.** Stops and trips transition explicitly; **shipments are
    derived** from the sum of successful delivery-attempt lines, in one idempotent use
@@ -194,11 +246,12 @@ Carry these forward into P2–P4. Each one has burned a real TMS.
 3. **Quantity accounting.** Delivered = `SUM(attempt lines where success)`; guard
    `<= planned`; record discrepancies, never clamp silently.
 4. **Idempotency.** A driver on 3G submits twice. Client-generated UUID + a unique
-   column on attempts/expenses/POD, not a generic middleware. Repeat returns the
+   column on attempts/scans/expenses/POD, not a generic middleware. Repeat returns the
    existing row.
-5. **Capacity.** Per trip = sum over **distinct** shipments on its stops (a shipment
-   on two stops must not count twice). Effective limit is `min(vehicle, trailer)`.
-   Block, with a permissioned override that records a reason — overweight fines are
+5. **Capacity is more than a ceiling.** Effective limit is `min(vehicle, trailer)`,
+   but also track utilization (weight/volume fill %) and, for the legal check,
+   per-axle and gross weight plus dimensions (NOM-012-SCT-2). An almost-empty truck
+   is a consolidation candidate; an overloaded one is blocked. Overweight fines are
    why the block exists.
 6. **Resource conflicts.** One driver/vehicle/trailer per overlapping window:
    `lockForUpdate` on the resource row inside the transaction, then check the window.
@@ -207,17 +260,41 @@ Carry these forward into P2–P4. Each one has burned a real TMS.
 7. **Out-of-order scans.** Package state derives from the latest event by
    `occurred_at`, not insert order, through an allowed-transition map.
 8. **Casetas.** Toll price depends on booth × axle configuration × direction — a
-   catalog that cannot be won up front. P4 ships free-entry expenses with a receipt
-   photo; a booth catalog with per-axle prices is P6.
+   catalog that cannot be won up front. Ship free-entry expenses with a receipt photo
+   first; the booth catalog with per-axle prices lands in P9. Design the expense shape
+   so the catalog can attach later.
 9. **Snapshots.** Freeze party/address/commercial data on the shipment at creation,
-   and the address on the stop. Otherwise editing a location rewrites delivered
-   history and invalidates every POD.
-10. **Timezone.** Store UTC (`timestampTz`), keep a timezone on the team and the trip.
-    Mexico dropped DST in 2022 _except_ border municipalities — never hardcode −6/−7.
+   the address on the stop, and the **fiscal payload on the trip** at stamping.
+   Otherwise editing a location rewrites delivered history and invalidates every POD
+   and CFDI.
+10. **Timezone.** Store UTC (`timestampTz`), keep a timezone on the team, the
+    location, and the trip. Mexico dropped DST in 2022 _except_ border municipalities
+    — never hardcode −6/−7.
 11. **Files.** Private disk + temporary signed URLs. POD evidence append-only;
     corrections create a new record. Compress photos client-side.
 12. **Retryable jobs.** `ShouldBeUnique`, idempotent, and they receive `team_id`
     explicitly.
+13. **Compliance is a gate, not a warning.** Validate the payload before allowing
+    dispatch. An override is permissioned and audited. Prepare Carta Porte data as a
+    snapshot; never regenerate a stamped document from live data.
+14. **PAC calls are slow and can fail.** Stamp asynchronously in a queued job with
+    retry/backoff; show the document as `pending`/`stamped`/`error` and never block the
+    UI. Cancellation never deletes the original.
+15. **Fiscal catalogs are versioned.** SAT codes change; a stamped document must be
+    able to reference the catalog version in force when it was issued.
+16. **Package custody.** A package's state comes from scans, and a package can be
+    split across partial deliveries. Reconcile the manifest against scanned reality
+    and surface mismatches as exceptions.
+17. **Fuel and tolls are first-class costs.** Capture liters, price/liter, odometer,
+    and tank so fuel efficiency (km/L) and fuel surcharges are computable. Do not
+    model fuel as a generic "expense" with only an amount.
+18. **Money needs a currency.** Even with MXN only today, the column must exist;
+    cross-border totals mix currencies and must never be summed naively.
+19. **Global vs tenant catalogs.** A tenant request must never be able to write a
+    global catalog row. Seed/version them; keep them out of `BelongsToTeam`.
+20. **Optimization is advisory.** The optimizer proposes plans; it must never
+    silently override a dispatcher, violate a hard capacity/compliance gate, or lose
+    a manually pinned stop. Every accepted plan is attributable.
 
 ---
 
@@ -245,7 +322,7 @@ compliance_documents   id, team_id, documentable_type/id, type, number?, issued_
 - `carrier_party_id` nullable → null means own fleet; set means a subcontracted
   party. Validate it with `Rule::exists('parties','id')->where('team_id', ...)`.
 - `ComplianceDocumentType` enum: `License | Insurance | Verification | Permit |
-Inspection | Other`, labels in `lang/{es,en}/compliance_document_types.php`.
+  Inspection | Other`, labels in `lang/{es,en}/compliance_document_types.php`.
 - **No file column in P1b.** The upload lands in P5 with private storage and signed
   URLs; a metadata-only row is still useful (it is what expiry checks read).
 - **No `drivers.user_id` yet.** Add it in P4 when the portal needs to link a login to
@@ -306,43 +383,180 @@ CRUD + validation + authorization + isolation for each entity, plus:
 
 ---
 
-## 7. Then: P2 → P6 outline
+## 7. Roadmap: P2 → P10
 
-### P2 — order intake
+### P2 — order intake, rates, and packages
 
-`service_requests` (+items) → `shipments` (+items, +packages). Freeze the snapshot
-fields. Derive the shipment totals (weight/volume/pieces) from items. **Do not put
-`trip_id` on a shipment.** First real vertical slice: list the records of the tenant.
+Goal: turn a commercial request into trackable, priced operational units, and give
+every downstream record the fields compliance and routing will need.
+
+**Delivered (slice 1):**
+
+- `locations.latitude/longitude/timezone` (schema, request validation, factory,
+  location form/detail UI) — unblocks routing/ETA/toll work later.
+- `orders` (+`order_items`) with server-assigned numbers, customer snapshot,
+  integer-gram/cm³ lines, per-tenant partial unique number, CRUD + master–detail UI.
+- `shipments` (+`shipment_items`, `packages`) created from an order through
+  `ConvertOrderToShipment`: copies lines, derives weight/volume/pieces, snapshots
+  pickup/delivery addresses, and can generate packages.
+- Order status and shipment status **transition maps** enforced on update.
+- `TeamPermission::ManageOperations` (Owner/Admin/Dispatcher; Warehouse excluded).
+- Search extended to orders and shipments; sidebar + ⌘K entries; bilingual copy.
+- Feature tests: orders, conversion, shipments, packages, geodata, scoped bindings,
+  authorization, and tenant isolation.
+
+**Remaining in P2:**
+
+- Rate cards/rates and quotes (the pricing engine v1) — currently planned here but
+  could move to P7 with the full rate engine.
+- Order-line partial allocation across shipments (LTL) and package-level scanning
+  (P4).
+
+- **Entities:** `rate_cards`, `rates`, `service_requests` (+items), `orders`,
+  `shipments` (+items, +packages), `locations.coordinates`/`timezone`.
+- **Rate engine (v1):** flat and distance/weight/volume/zone rates; quote snapshot.
+- **Snapshots:** freeze party/address/commercial data on the shipment at creation.
+- **Shipment totals** derive from items; packages carry a barcode/SSCC and a
+  lifecycle.
+- **Compliance fields on the payload** (weight, packaging, HazMat flags, claves) so
+  the P6 gate has data to validate.
+- **AC:** the README milestone completes — create customer + location → order →
+  shipment → list within the correct tenant; and a quote prices an order.
+- **Tests:** rate math in minor units, snapshot immutability, package identity
+  uniqueness per tenant, coordinates validation.
 
 ### P3 — planning and dispatch
 
-`loads` (decided: a separate entity), `trips`, `trip_assignments`, `stops`,
-`stop_shipments`. State machines via one `TransitionStatus` action that validates,
-persists, writes the tracking event, and audits. Capacity guard, resource-conflict
-guard, and a dispatch board as the primary UX (dragging shipments onto a trip with a
-live capacity gauge) — not a planning tab.
+Goal: answer _"can this unit move this load, legally and physically, and is it free?"_
+
+- **Entities:** `loads`, `trips`, `trip_assignments`, `stops`, `stop_shipments`,
+  `trip_compliance` (payload snapshot), `resource_reservations`.
+- **One `TransitionStatus` action** that validates, persists, writes the tracking
+  event, and audits.
+- **Capacity guard:** planned weight/volume vs `min(vehicle, trailer)`; utilization
+  display; per-axle/gross limits where data exists; permissioned override with reason.
+- **Resource-conflict guard:** `lockForUpdate` per resource across overlapping windows.
+- **Dispatch board** as the primary UX: drag shipments onto a trip with a live
+  capacity/utilisation gauge, not a planning tab.
+- **PAC adapter boundary** defined here (interface + fake); issuance is P6.
+- **AC:** dispatch is blocked while a hard gate fails; a dispatcher can override with
+  a reason; the board shows fill and conflicts in real time.
 
 ### P4 — driver execution
 
-Responsive driver portal (its own shell: _next stop_, three big targets), delivery
-attempts with partial quantities, POD (signature, photos, recipient, consent),
-expenses with a receipt photo, and an offline/cold-start retry queue. Add
-`drivers.user_id` here.
+Goal: a driver can run a trip end-to-end on a phone, offline.
 
-### P5 — hardening
+- Responsive driver portal (its own shell, mobile-first) built as an **offline-first
+  PWA**: local cache of the assigned trip, a retry queue that syncs idempotently.
+- Delivery attempts with partial quantities; returns; failed-delivery reasons.
+- **Package scans** (barcode/QR) with custody transitions.
+- POD: signature, photos, recipient, consent, location; append-only.
+- **Incidents/exceptions** entity and workflow.
+- **Fuel/expenses:** liters, price/liter, odometer, tank, receipt photo; tolls as
+  generic expenses until the P9 catalog.
+- Add `drivers.user_id` to link a login to a driver.
+- **AC:** airplane-mode test passes; a double-submit returns the same row.
 
-Tracking timeline, notifications (start with `DB::afterCommit()` + queued listeners;
-move to an outbox when customer notification becomes contractual), audit UI, real
-file storage with temporary URLs, retention/pruning, exports.
+### P5 — visibility and hardening
 
-### P6 — integrations
+Goal: everyone can see the truth as it happens, and the system survives failure.
 
-CFDI import boundary (never compute taxes), toll-booth catalog, customer portal,
-routing/ETA providers, billing.
+- Tracking timeline (append-only), audit UI, notifications via
+  `DB::afterCommit()` + queued listeners; migrate to an outbox.
+- **Telematics aggregator:** hardware-agnostic adapter, position/telemetry storage,
+  multi-provider handoff.
+- Geofences and predictive ETA; proactive arrival/departure/exception alerts.
+- Real file storage with temporary URLs; retention/pruning; exports.
+- **AC:** a GPS fix from a fake provider advances the timeline and fires a geofence
+  event; a failed job retries without duplicating records.
+
+### P6 — fiscal compliance (Mexico)
+
+Goal: issue and cancel legal fiscal documents without blocking operations.
+
+- **Global catalogs:** `catCFDI` subsets (`ClaveProdServ`, `ClaveUnidad`,
+  `FracciónArancelaria`, `MaterialPeligroso`), versioned.
+- **CFDI 4.0** Ingreso and Traslado, plus **Carta Porte 3.0/3.1** payload builders.
+- **PAC adapter:** async stamping (_timbrado_) and cancellation through a certified
+  provider; `pending/stamped/error/cancelled` states; retries.
+- **Dispatch gate** enforces mandatory fields (weight, packaging, operator RFC,
+  vehicle configuration, HazMat); override is permissioned and audited.
+- Cross-border: pedimento storage/linkage; drayage workflows.
+- **AC:** a trip cannot dispatch with an incomplete payload; a stamped document is
+  snapshotted and immutable; cancellation preserves the original.
+
+### P7 — pricing, settlement, and billing
+
+Goal: turn delivered work into money, correctly.
+
+- Rate engine matrix completion (contract/spot, surcharges) and quote→order pricing.
+- **3-way match:** rate quote + e-POD quantities + invoice; flag variances.
+- **Accessorials:** detention, demurrage, layover, fuel surcharge — computed from
+  recorded events.
+- Customer **invoicing** and carrier **settlement** as separate flows over the same
+  POD; payment status tracking.
+- Multi-currency columns in place; MXN first.
+- **AC:** a delivered trip produces a matched, itemized invoice; a variance is
+  visible and resolvable, never silently absorbed.
+
+### P8 — optimization
+
+Goal: propose better plans without ever breaking a hard rule.
+
+- Routing engine + constraint engine: toll roads, bridge weight/height, driver
+  rest/HOS, urban access windows.
+- Multi-stop sequencing for time windows and fuel; LTL→FTL consolidation on the
+  dispatch board.
+- Toll-aware costing (catalog from P9 can upgrade the estimate).
+- **Advisory only:** optimizer proposes, dispatcher confirms; pinned stops and hard
+  gates are respected; every accepted plan is attributable.
+- **AC:** an optimizer run improves a toy plan and cannot violate capacity/compliance.
+
+### P9 — integrations and expansion
+
+- EDI 204/211/214/210; ERP/WMS connectors (SAP, NetSuite, Odoo).
+- Toll-booth catalog with per-axle pricing + telepeaje (IAVE/TAG) reconciliation.
+- Cross-tenant **customer/carrier portal** (the expensive one; gated behind sharing
+  grants).
+- SaaS subscription billing; multi-currency rollout.
+
+### P10 — analytics and KPIs
+
+- OTIF, cost per ton/km, utilization, driver safety, carrier rating,
+  margin/profitability.
+- Export/scheduled reporting; customer-specific dashboards.
 
 ---
 
-## 8. i18n workflow
+## 8. UX/UI principles
+
+The product wins on ease of use. These are acceptance criteria, not aspirations.
+
+1. **The primary workflow is the first screen.** Dispatch is a board, driver
+   execution is a phone-first next-stop view. Do not bury the job in tabs.
+2. **Keyboard-first for office users.** ⌘K palette reaches any record; every list is
+   fast to filter; forms are submittable without the mouse.
+3. **Mobile-first for drivers.** Big tap targets, minimal typing, works offline,
+   resumes cleanly after a cold start. Never require a network round-trip to finish a
+   stop.
+4. **Progressive disclosure.** Show the next decision, hide the rest. Advanced
+   compliance and pricing fields expand on demand but validate visibly.
+5. **Always show state.** Skeleton loaders for deferred props, deliberate empty
+   states, optimistic updates with rollback, and clear success/error toasts.
+6. **Bilingual and consistent.** Every string is translated; money, weight, volume,
+   and dates format per locale; English text is the key.
+7. **Reuse before inventing.** Check `components/catalog` and `components/ui` first;
+   extend `CatalogListLayout` rather than duplicating list markup.
+8. **Accessible by default.** shadcn-vue/reka-ui primitives, focus management,
+   labelled controls, contrast, and reduced-motion support.
+9. **Feedback over silence.** Long operations (stamping, optimization, imports) show
+   progress and never block the UI; async jobs report status.
+10. **Performance budget.** Lists paginate; the shared locale dictionary is split by
+    namespace once it passes ~50 KB; images/signatures compress client-side.
+
+---
+
+## 9. i18n workflow
 
 - Server: `__('English string')`; enums use dotted group files
   (`lang/{es,en}/roles.php`, `party_types.php`, …).
@@ -374,7 +588,7 @@ routing/ETA providers, billing.
 
 ---
 
-## 9. Testing conventions
+## 10. Testing conventions
 
 - Pest, feature tests first (`tests/Feature/...`). One file per class/area; name the
   behaviour, not the method.
@@ -387,52 +601,64 @@ routing/ETA providers, billing.
   correct and should not be worked around in tests.
 - Authorization matrices belong on the policy/rule class; the endpoint test only
   proves the endpoint applies it.
+- Every provider interface gets a fake; domain tests never call a real PAC, GPS, or
+  map provider.
 - Don't add a test for framework behaviour. Do add one when a _project_ rule is at
   stake (the tenancy convention test is the model to copy).
 
 ---
 
-## 10. Open questions for the user
+## 11. Open questions for the user
 
 1. **Cross-tenant carrier access** — do carriers eventually log in and see trips
    offered to them? Today they are plain parties. If yes, that becomes a first-class
    phase (sharing grants, invitations, per-record visibility).
 2. **Hours of service / driver shifts** — is `trip_assignments` enough, or do we need
-   duty-time tracking? It changes the driver model.
-3. **Multi-currency** — MXN only for now. Cross-border work would force a currency
-   column on money and the caseta catalog.
+   duty-time tracking? It changes the driver model and the optimizer.
+3. **Multi-currency** — MXN first, but cross-border forces a currency column and
+   FX handling. Confirm when to turn it on.
 4. **Warehouse vs dispatcher permissions** — both currently manage the whole catalog.
    If warehouse staff must not edit customers, split `ManageCatalog`.
 5. **Partial loads** — real LTL will need a shipment on multiple trips at once
    (quantities split per leg). The schema allows it via stops; confirm it is in scope
    before P3 freezes the planning UI.
+6. **PAC provider** — which certified provider (Finkok, SW, Edicom, …) do we target
+   first? This shapes the adapter and sandbox.
+7. **Delivery vs Traslado** — will tenants mostly bill transport (Ingreso + CCP) or
+   move their own goods (Traslado + CCP)? It changes the default document flow.
 
 ---
 
-## 11. Known debt and deferred items
+## 12. Known debt and deferred items
 
 | Item                                                                                        | Trigger to pick it up                 |
 | ------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `NavFooter.vue` is unused after the starter-kit links were removed                          | delete with the next nav change       |
 | No "restore" action for soft-deleted records                                                | a user asks for a deleted record back |
-| State/postal code are free text                                                             | SEPOMEX address catalog (P6)          |
+| State/postal code are free text                                                             | SEPOMEX address catalog (P2/P9)       |
+| No coordinates/timezone on locations                                                         | P2 (routing/ETA/toll depend on it)    |
 | Full Spanish `validation.php` covers common rules only; anything else falls back to English | a missing message is reported         |
 | Contact "primary" flag, party multi-type                                                    | a workflow demands it                 |
 | Compliance document files                                                                   | P5 (private storage + signed URLs)    |
-| `ManageCatalog` is coarse                                                                   | see §10.4                             |
+| `ManageCatalog` is coarse                                                                   | see §11.4                             |
 | `⌘K` has no visible affordance in the header                                                | first UX polish pass                  |
-| Load/Trip feasibility is unmodelled (no drive-time estimate)                                | P3, and only as a warning             |
+| Load/Trip feasibility is unmodelled (no drive-time estimate)                                | P8 (optimization)                     |
+| Soft delete everywhere vs. fiscal immutability                                             | P6 (stamped docs must never vanish)   |
 
 ---
 
-## 12. File map
+## 13. File map
 
 ```
 app/Concerns/BelongsToTeam.php        tenancy scope + team_id fill + team() relation
 app/Data/TeamContext.php              per-request/job tenant, set by EnsureTeamMembership
-app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, ComplianceDocumentType
+app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, ComplianceDocumentType,
+                                      OrderStatus, ShipmentStatus, PackageStatus
 app/Http/Controllers/Parties|Locations|SearchController.php
 app/Http/Controllers/Fleet/           Driver|Vehicle|Trailer (+ one document controller per parent)
+app/Http/Controllers/Orders/          OrderController, OrderShipmentController
+app/Http/Controllers/Shipments/       ShipmentController, ShipmentPackageController
+app/Actions/Orders|Shipments/         SaveOrder, ConvertOrderToShipment, StorePackages
 app/Http/Middleware/                  EnsureTeamMembership (priority: before binding), SetLocale
 app/Policies/TeamPolicy.php           manageCatalog
 app/Rules/Rfc.php                     RFC shape (no check digit yet)
@@ -442,11 +668,20 @@ resources/js/lib/i18n.ts              t() and the global $t
 resources/js/composables/useFilteredList.ts   URL-backed, debounced list filtering
 resources/js/components/CommandPalette.vue    ⌘K: nav commands + server search
 resources/js/components/catalog/      CatalogListLayout, party/location/fleet detail + form sheets,
-                                      ComplianceDocsSection + DocumentRow + DocumentForm
-resources/js/pages/                   parties/, locations/, fleet/{drivers,vehicles,trailers}
+                                      ComplianceDocsSection + DocumentRow + DocumentForm,
+                                      OrderFormSheet/OrderDetail/OrderItemsEditor, ShipmentDetail
+resources/js/pages/                   parties/, locations/, fleet/{drivers,vehicles,trailers},
+                                      orders/, shipments/
 tests/Feature/Tenancy/                trait behaviour + the model convention test
 tests/Feature/Fleet/                  drivers, vehicles, trailers, compliance documents
+tests/Feature/Orders|Shipments/       orders, conversion, shipments, packages
 ```
+
+Planned (not yet built): `app/Models` gains Load/Trip/Stop/Attempt/Pod/TrackingEvent/
+Position/Exception/Expense/CfdiDocument/Rate/Invoice;
+`app/Contracts` holds the provider interfaces (Pac, Telematics, Routing, Storage,
+Notifications, Billing); `app/Enums` gains the remaining status enums and compliance
+types; `routes/api.php` exposes the versioned API.
 
 Use `php artisan make:*` for new files, `--no-interaction`, and follow the sibling
 file's structure before writing a new one.
