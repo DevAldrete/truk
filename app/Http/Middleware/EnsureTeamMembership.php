@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Data\TeamContext;
 use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\User;
@@ -11,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureTeamMembership
 {
+    public function __construct(protected TeamContext $context) {}
+
     /**
      * Handle an incoming request.
      *
@@ -27,6 +30,10 @@ class EnsureTeamMembership
         if ($request->route('current_team') && ! $user->isCurrentTeam($team)) {
             $user->switchTeam($team);
         }
+
+        // The team in the URL is the tenant for this request, whatever the
+        // user's stored preference was when the request started.
+        $this->context->set($team->id);
 
         return $next($request);
     }
