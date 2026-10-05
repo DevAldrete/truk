@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dispatch\DispatchController;
 use App\Http\Controllers\Driver\DeliveryAttemptController;
+use App\Http\Controllers\Driver\IncidentController as DriverIncidentController;
 use App\Http\Controllers\Driver\PodEvidenceController;
 use App\Http\Controllers\Driver\ProofOfDeliveryController;
 use App\Http\Controllers\Driver\ScanController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Fleet\TrailerController;
 use App\Http\Controllers\Fleet\TrailerDocumentController;
 use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Fleet\VehicleDocumentController;
+use App\Http\Controllers\Incidents\IncidentController;
 use App\Http\Controllers\Loads\LoadController;
 use App\Http\Controllers\Loads\LoadShipmentController;
 use App\Http\Controllers\LocaleController;
@@ -135,6 +137,8 @@ Route::prefix('{current_team}')
         Route::delete('trips/{trip}/shipments/{shipment}', [TripShipmentController::class, 'destroy'])->name('trips.shipments.destroy');
         Route::post('trips/{trip}/dispatch', [TripDispatchController::class, 'store'])->name('trips.dispatch');
 
+        Route::patch('incidents/{incident}', [IncidentController::class, 'update'])->name('incidents.update');
+
         Route::scopeBindings()->group(function () {
             Route::post('trips/{trip}/stops', [StopController::class, 'store'])->name('trips.stops.store');
             Route::put('trips/{trip}/stops/reorder', [StopReorderController::class, 'update'])->name('trips.stops.reorder');
@@ -154,6 +158,8 @@ Route::prefix('{current_team}')
             });
 
             Route::post('trips/{trip}/scans', [ScanController::class, 'store'])->name('trips.scans.store');
+
+            Route::post('trips/{trip}/incidents', [DriverIncidentController::class, 'store'])->name('trips.incidents.store');
 
             Route::get('pods/{pod}/signature', [PodEvidenceController::class, 'signature'])->name('pods.signature');
             Route::get('pods/{pod}/photos/{index}', [PodEvidenceController::class, 'photo'])->name('pods.photos.show');

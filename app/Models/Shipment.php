@@ -39,6 +39,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Package> $packages
  * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Collection<int, ProofOfDelivery> $proofsOfDelivery
+ * @property-read Collection<int, Incident> $incidents
  * @property-read Order|null $order
  * @property-read Load|null $loadGroup
  * @property-read Location|null $pickupLocation
@@ -123,6 +124,16 @@ class Shipment extends Model
     public function proofsOfDelivery(): HasMany
     {
         return $this->hasMany(ProofOfDelivery::class);
+    }
+
+    /**
+     * Get the incidents reported against this shipment.
+     *
+     * @return HasMany<Incident, $this>
+     */
+    public function incidents(): HasMany
+    {
+        return $this->hasMany(Incident::class);
     }
 
     /**
