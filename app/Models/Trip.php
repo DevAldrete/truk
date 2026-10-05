@@ -38,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Stop> $stops
  * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Collection<int, Incident> $incidents
+ * @property-read Collection<int, Expense> $expenses
  * @property-read Driver|null $driver
  * @property-read Vehicle|null $vehicle
  * @property-read Trailer|null $trailer
@@ -127,6 +128,16 @@ class Trip extends Model
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);
+    }
+
+    /**
+     * Get the expenses incurred on this trip.
+     *
+     * @return HasMany<Expense, $this>
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
     }
 
     /**

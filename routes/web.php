@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dispatch\DispatchController;
 use App\Http\Controllers\Driver\DeliveryAttemptController;
+use App\Http\Controllers\Driver\ExpenseController;
 use App\Http\Controllers\Driver\IncidentController as DriverIncidentController;
 use App\Http\Controllers\Driver\PodEvidenceController;
 use App\Http\Controllers\Driver\ProofOfDeliveryController;
@@ -160,6 +161,8 @@ Route::prefix('{current_team}')
             Route::post('trips/{trip}/scans', [ScanController::class, 'store'])->name('trips.scans.store');
 
             Route::post('trips/{trip}/incidents', [DriverIncidentController::class, 'store'])->name('trips.incidents.store');
+
+            Route::post('trips/{trip}/expenses', [ExpenseController::class, 'store'])->name('trips.expenses.store');
 
             Route::get('pods/{pod}/signature', [PodEvidenceController::class, 'signature'])->name('pods.signature');
             Route::get('pods/{pod}/photos/{index}', [PodEvidenceController::class, 'photo'])->name('pods.photos.show');

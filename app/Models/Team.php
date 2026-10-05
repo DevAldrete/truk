@@ -44,6 +44,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Collection<int, ProofOfDelivery> $proofsOfDelivery
  * @property-read Collection<int, Incident> $incidents
+ * @property-read Collection<int, Expense> $expenses
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -332,6 +333,16 @@ class Team extends Model
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);
+    }
+
+    /**
+     * Get all operational expenses of this team.
+     *
+     * @return HasMany<Expense, $this>
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
     }
 
     /**

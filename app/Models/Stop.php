@@ -40,6 +40,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Collection<int, ProofOfDelivery> $proofsOfDelivery
  * @property-read Collection<int, Incident> $incidents
+ * @property-read Collection<int, Expense> $expenses
  * @property-read Team $team
  */
 #[Fillable([
@@ -140,6 +141,16 @@ class Stop extends Model
     public function incidents(): HasMany
     {
         return $this->hasMany(Incident::class);
+    }
+
+    /**
+     * Get the expenses incurred at this stop.
+     *
+     * @return HasMany<Expense, $this>
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
     }
 
     /**

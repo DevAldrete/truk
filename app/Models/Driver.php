@@ -80,6 +80,16 @@ class Driver extends Model
     }
 
     /**
+     * Get the expenses attributed to this driver.
+     *
+     * @return HasMany<Expense, $this>
+     */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
