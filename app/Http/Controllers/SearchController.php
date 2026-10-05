@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Driver;
 use App\Models\Location;
 use App\Models\Party;
 use App\Models\Team;
+use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -60,8 +62,44 @@ class SearchController extends Controller
                 ]),
             ]);
 
+        $drivers = Driver::query()
+            ->where(fn ($query) => $query
+                ->whereRaw('LOWER(name) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(phone) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(license_number) LIKE ?', [$needle]))
+            ->orderBy('name')
+            ->limit(5)
+            ->get()
+            ->map(fn (Driver $driver) => [
+                'type' => 'driver',
+                'title' => $driver->name,
+                'subtitle' => $driver->license_number ?? $driver->phone,
+                'url' => route('drivers.show', [
+                    'current_team' => $current_team->slug,
+                    'driver' => $driver->id,
+                ]),
+            ]);
+
+        $vehicles = Vehicle::query()
+            ->where(fn ($query) => $query
+                ->whereRaw('LOWER(name) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(plate) LIKE ?', [$needle])
+                ->orWhereRaw('LOWER(configuration) LIKE ?', [$needle]))
+            ->orderBy('name')
+            ->limit(5)
+            ->get()
+            ->map(fn (Vehicle $vehicle) => [
+                'type' => 'vehicle',
+                'title' => $vehicle->name,
+                'subtitle' => $vehicle->plate.' · '.$vehicle->configuration,
+                'url' => route('vehicles.show', [
+                    'current_team' => $current_team->slug,
+                    'vehicle' => $vehicle->id,
+                ]),
+            ]);
+
         return response()->json([
-            'results' => $parties->concat($locations)->values()->all(),
+            'results' => $parties->concat($locations)->concat($drivers)->concat($vehicles)->values()->all(),
         ]);
     }
 }

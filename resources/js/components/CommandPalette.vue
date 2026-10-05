@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import { Building2, LayoutGrid, MapPin, Search, Settings } from '@lucide/vue';
+import {
+    Building2,
+    LayoutGrid,
+    MapPin,
+    Search,
+    Settings,
+    Truck,
+    Users,
+} from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import {
     Dialog,
@@ -11,8 +19,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 import { dashboard, search as searchRoute } from '@/routes';
+import { index as driversIndex } from '@/routes/drivers';
 import { index as locationsIndex } from '@/routes/locations';
 import { index as partiesIndex } from '@/routes/parties';
+import { index as vehiclesIndex } from '@/routes/vehicles';
 import type { SearchResult } from '@/types';
 
 const props = defineProps<{
@@ -53,6 +63,18 @@ const commands = computed<Item[]>(() => [
         url: locationsIndex.url({ current_team: props.teamSlug }),
     },
     {
+        key: 'drivers',
+        label: t('Drivers'),
+        icon: Users,
+        url: driversIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'vehicles',
+        label: t('Vehicles'),
+        icon: Truck,
+        url: vehiclesIndex.url({ current_team: props.teamSlug }),
+    },
+    {
         key: 'settings',
         label: t('Settings'),
         icon: Settings,
@@ -76,7 +98,14 @@ const items = computed<Item[]>(() => {
             key: `${result.type}-${result.url}`,
             label: result.title,
             hint: result.subtitle,
-            icon: result.type === 'party' ? Building2 : MapPin,
+            icon:
+                result.type === 'party'
+                    ? Building2
+                    : result.type === 'location'
+                      ? MapPin
+                      : result.type === 'driver'
+                        ? Users
+                        : Truck,
             url: result.url,
         })),
     ];
@@ -197,7 +226,7 @@ onUnmounted(() => {
         >
             <DialogTitle class="sr-only">{{ $t('Search') }}</DialogTitle>
             <DialogDescription class="sr-only">
-                {{ $t('Search customers, carriers, and sites') }}
+                {{ $t('Search customers, carriers, units, and drivers') }}
             </DialogDescription>
 
             <div class="flex items-center gap-2 border-b px-3">

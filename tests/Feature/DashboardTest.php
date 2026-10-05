@@ -1,9 +1,12 @@
 <?php
 
 use App\Enums\TeamRole;
+use App\Models\ComplianceDocument;
+use App\Models\Driver;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
+use App\Models\Vehicle;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('guests are redirected to the login page', function () {
@@ -132,4 +135,31 @@ test('dashboard does not include or delete other users invitations', function ()
     $this->assertDatabaseHas('team_invitations', [
         'id' => $invitation->id,
     ]);
+});
+
+test('dashboard reports fleet warnings for the current team', function () {
+    $user = User::factory()->create();
+    $team = $user->currentTeam;
+
+    Driver::factory()->for($team)->create(['license_expires_at' => now()->subDay()]);
+    Driver::factory()->for($team)->create(['license_expires_at' => now()->addYear()]);
+
+    ComplianceDocument::factory()
+        ->for($team)
+        ->for(Driver::factory()->for($team)->create(), 'documentable')
+        ->expired()
+        ->create();
+
+    ComplianceDocument::factory()
+        ->for($team)
+        ->for(Vehicle::factory()->for($team)->create(), 'documentable')
+        ->create(['expires_at' => now()->addDays(10)]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->where('fleetWarnings.expired_licenses', 1)
+            ->where('fleetWarnings.expired_documents', 1)
+            ->where('fleetWarnings.expiring_documents', 1));
 });

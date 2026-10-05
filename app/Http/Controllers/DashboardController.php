@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ComplianceDocument;
+use App\Models\Driver;
 use App\Models\TeamInvitation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,6 +35,21 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard', [
             'pendingInvitations' => $pendingInvitations,
+            'fleetWarnings' => [
+                'expired_licenses' => Driver::query()
+                    ->whereNotNull('license_expires_at')
+                    ->whereDate('license_expires_at', '<', now())
+                    ->count(),
+                'expired_documents' => ComplianceDocument::query()
+                    ->whereNotNull('expires_at')
+                    ->whereDate('expires_at', '<', now())
+                    ->count(),
+                'expiring_documents' => ComplianceDocument::query()
+                    ->whereNotNull('expires_at')
+                    ->whereDate('expires_at', '>=', now())
+                    ->whereDate('expires_at', '<=', now()->addDays(30))
+                    ->count(),
+            ],
         ]);
     }
 }

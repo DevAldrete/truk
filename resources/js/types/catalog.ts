@@ -123,7 +123,7 @@ export type ComplianceDocument = {
 };
 
 export type SearchResult = {
-    type: 'party' | 'location';
+    type: 'party' | 'location' | 'driver' | 'vehicle';
     title: string;
     subtitle: string;
     url: string;

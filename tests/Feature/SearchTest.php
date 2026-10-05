@@ -1,10 +1,12 @@
 <?php
 
 use App\Enums\TeamRole;
+use App\Models\Driver;
 use App\Models\Location;
 use App\Models\Party;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Vehicle;
 
 test('the palette finds parties and sites of the current team', function () {
     $user = User::factory()->create();
@@ -29,6 +31,29 @@ test('the palette finds parties and sites of the current team', function () {
         ->getJson(route('search', ['current_team' => $team, 'q' => 'bodega']))
         ->assertJsonPath('results.0.type', 'location')
         ->assertJsonPath('results.0.subtitle', 'Monterrey, Nuevo León');
+});
+
+test('the palette finds drivers and vehicles of the current team', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    Driver::factory()->for($team)->create(['name' => 'Juan Pérez', 'license_number' => 'ABC123456']);
+    Vehicle::factory()->for($team)->create([
+        'name' => 'Unidad 12',
+        'plate' => 'ABC-12-34',
+        'configuration' => 'Torton',
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('search', ['current_team' => $team, 'q' => 'juan']))
+        ->assertJsonPath('results.0.type', 'driver')
+        ->assertJsonPath('results.0.title', 'Juan Pérez');
+
+    $this->actingAs($user)
+        ->getJson(route('search', ['current_team' => $team, 'q' => 'unidad 12']))
+        ->assertJsonPath('results.0.type', 'vehicle')
+        ->assertJsonPath('results.0.title', 'Unidad 12');
 });
 
 test('the palette never returns records of another team', function () {
