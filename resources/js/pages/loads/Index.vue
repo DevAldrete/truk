@@ -80,7 +80,10 @@ const status = ref(props.filters.status ?? 'all');
                         }
                     "
                 >
-                    <SelectTrigger class="w-full" data-test="load-status-filter">
+                    <SelectTrigger
+                        class="w-full"
+                        data-test="load-status-filter"
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -101,7 +104,9 @@ const status = ref(props.filters.status ?? 'all');
                     :href="show({ current_team: teamSlug, load: item.id })"
                     :class="[
                         'flex items-start gap-3 border-b px-4 py-3 transition-colors',
-                        load?.id === item.id ? 'bg-accent' : 'hover:bg-accent/40',
+                        load?.id === item.id
+                            ? 'bg-accent'
+                            : 'hover:bg-accent/40',
                     ]"
                     data-test="load-row"
                 >

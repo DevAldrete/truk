@@ -45,7 +45,9 @@ defineOptions({
     <div
         class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
     >
-        <section class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+        <section
+            class="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+        >
             <h2 class="text-sm font-semibold">{{ $t('Fleet warnings') }}</h2>
 
             <p

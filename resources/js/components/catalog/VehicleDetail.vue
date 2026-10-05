@@ -93,7 +93,9 @@ const save = () => {
                     })
                 "
                 :title="$t('Delete :name?', { name: vehicle.name })"
-                :description="$t('The vehicle will stop appearing in the lists.')"
+                :description="
+                    $t('The vehicle will stop appearing in the lists.')
+                "
             />
         </header>
 

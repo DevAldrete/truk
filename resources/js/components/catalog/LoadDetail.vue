@@ -15,7 +15,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { destroy, update } from '@/routes/loads';
-import { destroy as detachShipment, store as attachShipment } from '@/routes/loads/shipments';
+import {
+    destroy as detachShipment,
+    store as attachShipment,
+} from '@/routes/loads/shipments';
 import { show as showShipment } from '@/routes/shipments';
 import type { LoadDetail, Option } from '@/types';
 
@@ -33,10 +36,13 @@ const form = useForm({
 });
 
 const save = () => {
-    form.patch(update.url({ current_team: props.teamSlug, load: props.load.id }), {
-        preserveScroll: true,
-        onSuccess: () => form.defaults(),
-    });
+    form.patch(
+        update.url({ current_team: props.teamSlug, load: props.load.id }),
+        {
+            preserveScroll: true,
+            onSuccess: () => form.defaults(),
+        },
+    );
 };
 
 const attach = useForm({ shipment_id: 'none' });
@@ -75,7 +81,9 @@ const totalVolumeM3 = computed(() => props.load.totals.volume_cm3 / 1000000);
 
 <template>
     <div class="flex h-full flex-col">
-        <header class="flex items-start justify-between gap-4 border-b px-6 py-4">
+        <header
+            class="flex items-start justify-between gap-4 border-b px-6 py-4"
+        >
             <div class="min-w-0">
                 <div class="flex items-center gap-2">
                     <h2 class="truncate text-lg font-semibold">
@@ -208,8 +216,12 @@ const totalVolumeM3 = computed(() => props.load.totals.volume_cm3 / 1000000);
                             >
                                 {{ shipment.number }}
                             </Link>
-                            <span class="truncate text-xs text-muted-foreground">
-                                {{ shipment.customer_name ?? $t('No customer') }}
+                            <span
+                                class="truncate text-xs text-muted-foreground"
+                            >
+                                {{
+                                    shipment.customer_name ?? $t('No customer')
+                                }}
                             </span>
                         </span>
                         <span class="flex items-center gap-3">

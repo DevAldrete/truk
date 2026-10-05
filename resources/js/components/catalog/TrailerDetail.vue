@@ -93,7 +93,9 @@ const save = () => {
                     })
                 "
                 :title="$t('Delete :name?', { name: trailer.name })"
-                :description="$t('The trailer will stop appearing in the lists.')"
+                :description="
+                    $t('The trailer will stop appearing in the lists.')
+                "
             />
         </header>
 

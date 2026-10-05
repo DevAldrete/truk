@@ -73,7 +73,10 @@ const onInput = (value: string | number) => {
             v-if="paginator.last_page > 1"
             class="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground"
         >
-            <span>{{ paginator.from }}–{{ paginator.to }} / {{ paginator.total }}</span>
+            <span
+                >{{ paginator.from }}–{{ paginator.to }} /
+                {{ paginator.total }}</span
+            >
             <div class="flex gap-1">
                 <Button
                     v-for="link in paginator.links.filter(

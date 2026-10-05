@@ -110,7 +110,8 @@ const term = ref(props.filters.search ?? '');
                         </p>
                         <p
                             v-if="
-                                item.contacts_count > 0 || item.locations_count > 0
+                                item.contacts_count > 0 ||
+                                item.locations_count > 0
                             "
                             class="truncate text-[11px] text-muted-foreground"
                         >

@@ -103,7 +103,9 @@ const save = () => {
                     })
                 "
                 :title="$t('Delete :name?', { name: driver.name })"
-                :description="$t('The driver will stop appearing in the lists.')"
+                :description="
+                    $t('The driver will stop appearing in the lists.')
+                "
             />
         </header>
 

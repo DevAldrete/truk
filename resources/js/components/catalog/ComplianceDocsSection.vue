@@ -20,9 +20,7 @@ const adding = ref(false);
 
 <template>
     <section class="mt-8 border-t">
-        <header
-            class="flex items-center justify-between gap-2 px-6 py-3"
-        >
+        <header class="flex items-center justify-between gap-2 px-6 py-3">
             <h3 class="text-sm font-semibold">
                 {{ $t('Compliance documents') }}
             </h3>

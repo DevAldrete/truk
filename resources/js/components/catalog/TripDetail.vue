@@ -17,8 +17,15 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { destroy, update } from '@/routes/trips';
 import { update as updateResources } from '@/routes/trips/resources';
-import { destroy as destroyStop, reorder, store as storeStop } from '@/routes/trips/stops';
-import { destroy as detachStopShipment, store as attachStopShipment } from '@/routes/trips/stops/shipments';
+import {
+    destroy as destroyStop,
+    reorder,
+    store as storeStop,
+} from '@/routes/trips/stops';
+import {
+    destroy as detachStopShipment,
+    store as attachStopShipment,
+} from '@/routes/trips/stops/shipments';
 import { t } from '@/lib/i18n';
 import type { Option, TripDetail } from '@/types';
 
@@ -76,10 +83,13 @@ const save = () => {
         planned_end_at: data.planned_end_at || null,
     }));
 
-    form.patch(update.url({ current_team: props.teamSlug, trip: props.trip.id }), {
-        preserveScroll: true,
-        onSuccess: () => form.defaults(),
-    });
+    form.patch(
+        update.url({ current_team: props.teamSlug, trip: props.trip.id }),
+        {
+            preserveScroll: true,
+            onSuccess: () => form.defaults(),
+        },
+    );
 };
 
 const resources = useForm({
@@ -96,7 +106,10 @@ const saveResources = () => {
     }));
 
     resources.put(
-        updateResources.url({ current_team: props.teamSlug, trip: props.trip.id }),
+        updateResources.url({
+            current_team: props.teamSlug,
+            trip: props.trip.id,
+        }),
         { preserveScroll: true, onSuccess: () => resources.defaults() },
     );
 };
@@ -207,7 +220,9 @@ const moveStop = (index: number, direction: number) => {
 
 <template>
     <div class="flex h-full flex-col">
-        <header class="flex items-start justify-between gap-4 border-b px-6 py-4">
+        <header
+            class="flex items-start justify-between gap-4 border-b px-6 py-4"
+        >
             <div class="min-w-0">
                 <div class="flex items-center gap-2">
                     <h2 class="truncate text-lg font-semibold">
@@ -261,10 +276,7 @@ const moveStop = (index: number, direction: number) => {
                         {{ $t('Timezone') }}
                     </Label>
                     <Select v-model="form.timezone" :disabled="!canManage">
-                        <SelectTrigger
-                            id="trip-detail-timezone"
-                            class="w-full"
-                        >
+                        <SelectTrigger id="trip-detail-timezone" class="w-full">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -359,7 +371,9 @@ const moveStop = (index: number, direction: number) => {
                             <span>{{ $t('Weight') }}</span>
                             <span>
                                 {{
-                                    (capacity.weight_grams / 1000).toLocaleString()
+                                    (
+                                        capacity.weight_grams / 1000
+                                    ).toLocaleString()
                                 }}
                                 kg
                                 <template v-if="capacity.weight_limit_grams">
@@ -417,8 +431,7 @@ const moveStop = (index: number, direction: number) => {
                                     /
                                     {{
                                         (
-                                            capacity.volume_limit_cm3 /
-                                            1000000
+                                            capacity.volume_limit_cm3 / 1000000
                                         ).toLocaleString()
                                     }}
                                     m³
@@ -624,7 +637,11 @@ const moveStop = (index: number, direction: number) => {
                             </span>
                         </span>
                         <span class="text-xs text-muted-foreground">
-                            {{ assignment.released_at ? $t('Released') : $t('Active') }}
+                            {{
+                                assignment.released_at
+                                    ? $t('Released')
+                                    : $t('Active')
+                            }}
                         </span>
                     </li>
                 </ul>
@@ -651,12 +668,17 @@ const moveStop = (index: number, direction: number) => {
                                         · {{ stop.status_label }}
                                     </span>
                                 </p>
-                                <p class="truncate text-xs text-muted-foreground">
+                                <p
+                                    class="truncate text-xs text-muted-foreground"
+                                >
                                     {{ stop.location_name ?? $t('No site') }}
                                 </p>
                             </div>
 
-                            <div v-if="canManage" class="flex items-center gap-1">
+                            <div
+                                v-if="canManage"
+                                class="flex items-center gap-1"
+                            >
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -712,9 +734,14 @@ const moveStop = (index: number, direction: number) => {
                             </span>
                         </div>
 
-                        <div v-if="canManage" class="mt-2 flex items-center gap-2">
+                        <div
+                            v-if="canManage"
+                            class="mt-2 flex items-center gap-2"
+                        >
                             <Select
-                                :model-value="attachSelection[stop.id] ?? 'none'"
+                                :model-value="
+                                    attachSelection[stop.id] ?? 'none'
+                                "
                                 @update:model-value="
                                     (value) =>
                                         (attachSelection[stop.id] =
