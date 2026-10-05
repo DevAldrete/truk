@@ -107,6 +107,7 @@ return [
     'required_unless' => 'El campo :attribute es obligatorio a menos que :other esté en :values.',
     'required_with' => 'El campo :attribute es obligatorio cuando :values está presente.',
     'required_without' => 'El campo :attribute es obligatorio cuando :values no está presente.',
+    'rfc' => 'El campo :attribute no es un RFC válido.',
     'same' => 'Los campos :attribute y :other deben coincidir.',
     'size' => [
         'array' => 'El campo :attribute debe contener :size elementos.',
@@ -131,6 +132,18 @@ return [
         'password_confirmation' => 'confirmación de contraseña',
         'current_password' => 'contraseña actual',
         'role' => 'rol',
+        'legal_name' => 'razón social',
+        'rfc' => 'RFC',
+        'position' => 'puesto',
+        'party_id' => 'tercero',
+        'street' => 'calle',
+        'exterior_number' => 'número exterior',
+        'interior_number' => 'número interior',
+        'neighborhood' => 'colonia',
+        'city' => 'ciudad',
+        'state' => 'estado',
+        'postal_code' => 'código postal',
+        'references' => 'referencias',
     ],
 
 ];

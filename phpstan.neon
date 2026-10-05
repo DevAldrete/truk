@@ -11,11 +11,4 @@ parameters:
         - routes/
 
 
-    # The tenancy trait is verified by tests/Feature/Tenancy and gets its first
-    # application model in the master data slice. Remove this once a model
-    # under app/Models uses it.
-    ignoreErrors:
-        -
-            identifier: trait.unused
-            path: app/Concerns/BelongsToTeam.php
     level: 7

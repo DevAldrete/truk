@@ -152,6 +152,7 @@ return [
     'required_with_all' => 'The :attribute field is required when :values are present.',
     'required_without' => 'The :attribute field is required when :values is not present.',
     'required_without_all' => 'The :attribute field is required when none of :values are present.',
+    'rfc' => 'The :attribute field must be a valid RFC.',
     'same' => 'The :attribute field must match :other.',
     'size' => [
         'array' => 'The :attribute field must contain :size items.',
@@ -197,6 +198,14 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        'email' => 'email address',
+        'legal_name' => 'legal name',
+        'name' => 'name',
+        'password' => 'password',
+        'password_confirmation' => 'password confirmation',
+        'current_password' => 'current password',
+        'role' => 'role',
+    ],
 
 ];

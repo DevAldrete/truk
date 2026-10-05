@@ -96,6 +96,36 @@ class Team extends Model
     }
 
     /**
+     * Get all parties (customers, carriers, suppliers) of this team.
+     *
+     * @return HasMany<Party, $this>
+     */
+    public function parties(): HasMany
+    {
+        return $this->hasMany(Party::class);
+    }
+
+    /**
+     * Get all pickup and delivery sites of this team.
+     *
+     * @return HasMany<Location, $this>
+     */
+    public function locations(): HasMany
+    {
+        return $this->hasMany(Location::class);
+    }
+
+    /**
+     * Get all party contacts of this team.
+     *
+     * @return HasMany<PartyContact, $this>
+     */
+    public function partyContacts(): HasMany
+    {
+        return $this->hasMany(PartyContact::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
