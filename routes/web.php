@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Dispatch\DispatchController;
 use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\Fleet\DriverDocumentController;
 use App\Http\Controllers\Fleet\TrailerController;
@@ -23,7 +24,9 @@ use App\Http\Controllers\Trips\StopController;
 use App\Http\Controllers\Trips\StopReorderController;
 use App\Http\Controllers\Trips\StopShipmentController;
 use App\Http\Controllers\Trips\TripController;
+use App\Http\Controllers\Trips\TripDispatchController;
 use App\Http\Controllers\Trips\TripResourceController;
+use App\Http\Controllers\Trips\TripShipmentController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +37,8 @@ Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+        Route::get('dispatch', DispatchController::class)->name('dispatch');
 
         Route::get('search', SearchController::class)->name('search');
 
@@ -122,6 +127,9 @@ Route::prefix('{current_team}')
         Route::patch('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
         Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
         Route::put('trips/{trip}/resources', [TripResourceController::class, 'update'])->name('trips.resources.update');
+        Route::post('trips/{trip}/shipments', [TripShipmentController::class, 'store'])->name('trips.shipments.store');
+        Route::delete('trips/{trip}/shipments/{shipment}', [TripShipmentController::class, 'destroy'])->name('trips.shipments.destroy');
+        Route::post('trips/{trip}/dispatch', [TripDispatchController::class, 'store'])->name('trips.dispatch');
 
         Route::scopeBindings()->group(function () {
             Route::post('trips/{trip}/stops', [StopController::class, 'store'])->name('trips.stops.store');

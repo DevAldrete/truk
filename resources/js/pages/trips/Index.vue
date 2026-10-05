@@ -86,7 +86,10 @@ const status = ref(props.filters.status ?? 'all');
                         }
                     "
                 >
-                    <SelectTrigger class="w-full" data-test="trip-status-filter">
+                    <SelectTrigger
+                        class="w-full"
+                        data-test="trip-status-filter"
+                    >
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -107,7 +110,9 @@ const status = ref(props.filters.status ?? 'all');
                     :href="show({ current_team: teamSlug, trip: item.id })"
                     :class="[
                         'flex items-start gap-3 border-b px-4 py-3 transition-colors',
-                        trip?.id === item.id ? 'bg-accent' : 'hover:bg-accent/40',
+                        trip?.id === item.id
+                            ? 'bg-accent'
+                            : 'hover:bg-accent/40',
                     ]"
                     data-test="trip-row"
                 >

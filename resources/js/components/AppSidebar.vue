@@ -11,6 +11,7 @@ import {
     Route,
     Truck,
     Users,
+    Waypoints,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
@@ -36,13 +37,17 @@ import { index as shipmentsIndex } from '@/routes/shipments';
 import { index as trailersIndex } from '@/routes/trailers';
 import { index as tripsIndex } from '@/routes/trips';
 import { index as vehiclesIndex } from '@/routes/vehicles';
-import { dashboard } from '@/routes';
+import { dashboard, dispatch } from '@/routes';
 import type { NavItem } from '@/types';
 
 const page = usePage();
 
 const dashboardUrl = computed(() =>
     page.props.currentTeam ? dashboard(page.props.currentTeam.slug).url : '/',
+);
+
+const dispatchUrl = computed(() =>
+    page.props.currentTeam ? dispatch(page.props.currentTeam.slug).url : '/',
 );
 
 const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
@@ -52,6 +57,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: t('Dashboard'),
         href: dashboardUrl.value,
         icon: LayoutGrid,
+    },
+    {
+        title: t('Dispatch'),
+        href: dispatchUrl.value,
+        icon: Waypoints,
     },
     {
         title: t('Parties'),

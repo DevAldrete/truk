@@ -12,6 +12,7 @@ import {
     Settings,
     Truck,
     Users,
+    Waypoints,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import {
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
-import { dashboard, search as searchRoute } from '@/routes';
+import { dashboard, dispatch, search as searchRoute } from '@/routes';
 import { index as driversIndex } from '@/routes/drivers';
 import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
@@ -57,6 +58,12 @@ const commands = computed<Item[]>(() => [
         label: t('Dashboard'),
         icon: LayoutGrid,
         url: dashboard.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'dispatch',
+        label: t('Dispatch'),
+        icon: Waypoints,
+        url: dispatch.url({ current_team: props.teamSlug }),
     },
     {
         key: 'parties',

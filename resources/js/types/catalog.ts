@@ -351,6 +351,39 @@ export type TripDetail = Trip & {
     capacity_overridden_at: string | null;
 };
 
+export type DispatchShipmentRef = {
+    id: number;
+    number: string;
+    customer_name: string | null;
+};
+
+export type DispatchTrip = {
+    id: number;
+    number: string;
+    status: TripStatus;
+    status_label: string;
+    planned_start_at: string | null;
+    driver_id: number | null;
+    driver_name: string | null;
+    vehicle_id: number | null;
+    vehicle_name: string | null;
+    trailer_id: number | null;
+    trailer_name: string | null;
+    capacity: TripCapacity;
+    shipments: DispatchShipmentRef[];
+};
+
+export type DispatchPoolShipment = {
+    id: number;
+    number: string;
+    customer_name: string | null;
+    status: string;
+    status_label: string;
+    pieces: number;
+    weight_grams: number;
+    destination: string | null;
+};
+
 export type StopType = 'pickup' | 'delivery' | 'other';
 
 export type StopStatus =
