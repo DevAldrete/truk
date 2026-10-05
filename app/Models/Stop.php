@@ -38,6 +38,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Shipment> $shipments
  * @property-read Collection<int, DeliveryAttempt> $deliveryAttempts
  * @property-read Collection<int, ScanEvent> $scanEvents
+ * @property-read Collection<int, ProofOfDelivery> $proofsOfDelivery
  * @property-read Team $team
  */
 #[Fillable([
@@ -118,6 +119,16 @@ class Stop extends Model
     public function scanEvents(): HasMany
     {
         return $this->hasMany(ScanEvent::class);
+    }
+
+    /**
+     * Get the proofs of delivery captured at this stop.
+     *
+     * @return HasMany<ProofOfDelivery, $this>
+     */
+    public function proofsOfDelivery(): HasMany
+    {
+        return $this->hasMany(ProofOfDelivery::class);
     }
 
     /**

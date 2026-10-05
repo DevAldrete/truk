@@ -38,6 +38,19 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Private evidence storage for signatures, photos, and scanned
+         * documents. It is never served directly: files are streamed through an
+         * authorized controller that checks the tenant first.
+         */
+        'evidence' => [
+            'driver' => 'local',
+            'root' => storage_path('app/evidence'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

@@ -3,6 +3,8 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dispatch\DispatchController;
 use App\Http\Controllers\Driver\DeliveryAttemptController;
+use App\Http\Controllers\Driver\PodEvidenceController;
+use App\Http\Controllers\Driver\ProofOfDeliveryController;
 use App\Http\Controllers\Driver\ScanController;
 use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\Fleet\DriverDocumentController;
@@ -147,9 +149,15 @@ Route::prefix('{current_team}')
             Route::scopeBindings()->group(function () {
                 Route::post('trips/{trip}/stops/{stop}/attempts', [DeliveryAttemptController::class, 'store'])
                     ->name('trips.stops.attempts.store');
+                Route::post('trips/{trip}/stops/{stop}/pod', [ProofOfDeliveryController::class, 'store'])
+                    ->name('trips.stops.pod.store');
             });
 
             Route::post('trips/{trip}/scans', [ScanController::class, 'store'])->name('trips.scans.store');
+
+            Route::get('pods/{pod}/signature', [PodEvidenceController::class, 'signature'])->name('pods.signature');
+            Route::get('pods/{pod}/photos/{index}', [PodEvidenceController::class, 'photo'])->name('pods.photos.show');
+            Route::get('pods/{pod}/documents/{index}', [PodEvidenceController::class, 'document'])->name('pods.documents.show');
         });
     });
 
