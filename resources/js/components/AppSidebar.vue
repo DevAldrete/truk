@@ -8,6 +8,7 @@ import {
     LayoutGrid,
     MapPin,
     Package,
+    Route,
     Truck,
     Users,
 } from '@lucide/vue';
@@ -33,6 +34,7 @@ import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as shipmentsIndex } from '@/routes/shipments';
 import { index as trailersIndex } from '@/routes/trailers';
+import { index as tripsIndex } from '@/routes/trips';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
@@ -75,6 +77,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: t('Loads'),
         href: loadsIndex.url({ current_team: teamSlug.value }),
         icon: Layers,
+    },
+    {
+        title: t('Trips'),
+        href: tripsIndex.url({ current_team: teamSlug.value }),
+        icon: Route,
     },
 ]);
 

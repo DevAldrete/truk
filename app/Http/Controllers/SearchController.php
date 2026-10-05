@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Party;
 use App\Models\Shipment;
 use App\Models\Team;
+use App\Models\Trip;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -133,6 +134,21 @@ class SearchController extends Controller
                 ]),
             ]);
 
+        $trips = Trip::query()
+            ->whereRaw('LOWER(number) LIKE ?', [$needle])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (Trip $trip) => [
+                'type' => 'trip',
+                'title' => $trip->number,
+                'subtitle' => $trip->status->label(),
+                'url' => route('trips.show', [
+                    'current_team' => $current_team->slug,
+                    'trip' => $trip->id,
+                ]),
+            ]);
+
         $shipments = Shipment::query()
             ->where(fn ($query) => $query
                 ->whereRaw('LOWER(number) LIKE ?', [$needle])
@@ -158,6 +174,7 @@ class SearchController extends Controller
                 ->concat($orders)
                 ->concat($shipments)
                 ->concat($loads)
+                ->concat($trips)
                 ->values()
                 ->all(),
         ]);

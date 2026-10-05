@@ -7,6 +7,7 @@ import {
     LayoutGrid,
     MapPin,
     Package,
+    Route,
     Search,
     Settings,
     Truck,
@@ -28,6 +29,7 @@ import { index as locationsIndex } from '@/routes/locations';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as shipmentsIndex } from '@/routes/shipments';
+import { index as tripsIndex } from '@/routes/trips';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import type { SearchResult } from '@/types';
 
@@ -87,6 +89,12 @@ const commands = computed<Item[]>(() => [
         url: loadsIndex.url({ current_team: props.teamSlug }),
     },
     {
+        key: 'trips',
+        label: t('Trips'),
+        icon: Route,
+        url: tripsIndex.url({ current_team: props.teamSlug }),
+    },
+    {
         key: 'drivers',
         label: t('Drivers'),
         icon: Users,
@@ -135,7 +143,9 @@ const items = computed<Item[]>(() => {
                             ? Package
                             : result.type === 'load'
                               ? Layers
-                              : Truck,
+                              : result.type === 'trip'
+                                ? Route
+                                : Truck,
             url: result.url,
         })),
     ];

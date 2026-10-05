@@ -297,6 +297,43 @@ export type LoadDetail = Load & {
     totals: LoadTotals;
 };
 
+export type TripStatus =
+    | 'planned'
+    | 'dispatched'
+    | 'in_transit'
+    | 'completed'
+    | 'cancelled';
+
+export type Trip = {
+    id: number;
+    number: string;
+    status: TripStatus;
+    status_label: string;
+    planned_start_at: string | null;
+    planned_end_at: string | null;
+    timezone: string | null;
+    notes: string | null;
+    driver_id: number | null;
+    driver_name: string | null;
+    vehicle_id: number | null;
+    vehicle_name: string | null;
+    trailer_id: number | null;
+    trailer_name: string | null;
+    created_at: string | null;
+};
+
+export type TripAssignmentRef = {
+    id: number;
+    resource: 'driver' | 'vehicle' | 'trailer';
+    name: string | null;
+    assigned_at: string;
+    released_at: string | null;
+};
+
+export type TripDetail = Trip & {
+    assignments: TripAssignmentRef[];
+};
+
 export type SearchResult = {
     type:
         | 'party'
@@ -305,7 +342,8 @@ export type SearchResult = {
         | 'vehicle'
         | 'order'
         | 'shipment'
-        | 'load';
+        | 'load'
+        | 'trip';
     title: string;
     subtitle: string;
     url: string;

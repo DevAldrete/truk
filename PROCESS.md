@@ -67,7 +67,7 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 | **P1a**  | Parties (+contacts), Locations, ⌘K command palette                                              | ✅ Done    |
 | **P1b**  | Drivers, Vehicles, Trailers, Compliance documents                                               | ✅ Done    |
 | **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
-| **P3**   | Planning & dispatch: loads ✅, trips, stops, assignments, capacity, conflicts                    | 🚧 In progress |
+| **P3**   | Planning & dispatch: loads ✅, trips ✅, stops, capacity, dispatch board                         | 🚧 In progress |
 | **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ⬜         |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
@@ -438,8 +438,20 @@ Goal: answer _"can this unit move this load, legally and physically, and is it f
 - Feature tests: CRUD, grouping, transitions, scoped bindings, authorization,
   tenant isolation.
 
-**Remaining:** trips + assignments (with the resource-conflict guard), stops +
-`stop_shipments` (ordered sequencing), the capacity guard, and the dispatch board.
+**Remaining:** stops + `stop_shipments` (ordered sequencing), the capacity guard,
+and the dispatch board.
+
+**Delivered (slice 2):**
+
+- `trips` (planned window, timezone, `TripStatus` transition map) and
+  `trip_assignments` (append-only history).
+- Driver/vehicle/trailer assignment through `AssignTripResources`: the resource
+  row is locked for update and checked for **overlapping open trips**, so two
+  dispatchers cannot book the same unit at once.
+- Dispatch planner page, form sheet, detail with resource selects and assignment
+  history; search, sidebar and ⌘K entries; bilingual copy.
+- Feature tests: CRUD, transitions, assignment + history, overlap conflict,
+  non-overlap, cross-team resources, authorization and tenant isolation.
 
 - **Entities:** `loads`, `trips`, `trip_assignments`, `stops`, `stop_shipments`,
   `trip_compliance` (payload snapshot), `resource_reservations`.

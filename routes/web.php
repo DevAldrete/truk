@@ -19,6 +19,8 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Shipments\ShipmentController;
 use App\Http\Controllers\Shipments\ShipmentPackageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\Trips\TripController;
+use App\Http\Controllers\Trips\TripResourceController;
 use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
@@ -110,6 +112,13 @@ Route::prefix('{current_team}')
             Route::post('loads/{load}/shipments', [LoadShipmentController::class, 'store'])->name('loads.shipments.store');
             Route::delete('loads/{load}/shipments/{shipment}', [LoadShipmentController::class, 'destroy'])->name('loads.shipments.destroy');
         });
+
+        Route::get('trips', [TripController::class, 'index'])->name('trips.index');
+        Route::post('trips', [TripController::class, 'store'])->name('trips.store');
+        Route::get('trips/{trip}', [TripController::class, 'show'])->name('trips.show');
+        Route::patch('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
+        Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
+        Route::put('trips/{trip}/resources', [TripResourceController::class, 'update'])->name('trips.resources.update');
     });
 
 Route::middleware(['auth'])->group(function () {
