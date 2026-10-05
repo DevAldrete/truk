@@ -13,6 +13,7 @@ const props = defineProps<{
     drivers: Paginated<Driver>;
     filters: { search: string | null };
     carriers: Option[];
+    members: Option[];
     documentTypes: Option[];
     driver?: Driver;
     can: { manage: boolean };
@@ -55,6 +56,7 @@ const term = ref(props.filters.search ?? '');
                     v-if="can.manage"
                     :team-slug="teamSlug"
                     :carriers="carriers"
+                    :members="members"
                 />
             </template>
 
@@ -114,6 +116,7 @@ const term = ref(props.filters.search ?? '');
                 :driver="driver"
                 :team-slug="teamSlug"
                 :carriers="carriers"
+                :members="members"
                 :document-types="documentTypes"
                 :can-manage="can.manage"
             />

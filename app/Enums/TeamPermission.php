@@ -16,5 +16,6 @@ enum TeamPermission: string
 
     case ManageCatalog = 'catalog:manage';
     case ManageOperations = 'operations:manage';
+    case ExecuteOperations = 'operations:execute';
     case OverrideCapacity = 'capacity:override';
 }

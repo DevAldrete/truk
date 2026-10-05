@@ -49,6 +49,14 @@ class TeamPolicy
     }
 
     /**
+     * Determine whether the user can execute trips: scans, attempts, POD, incidents, expenses.
+     */
+    public function executeOperations(User $user, Team $team): bool
+    {
+        return $user->hasTeamPermission($team, TeamPermission::ExecuteOperations);
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool

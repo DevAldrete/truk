@@ -28,6 +28,7 @@ import type { Option } from '@/types';
 const props = defineProps<{
     teamSlug: string;
     carriers: Option[];
+    members: Option[];
 }>();
 
 const open = ref(false);
@@ -35,6 +36,7 @@ const open = ref(false);
 const form = useForm({
     name: '',
     phone: '',
+    user_id: 'none',
     license_number: '',
     license_expires_at: '',
     carrier_party_id: 'none',
@@ -43,6 +45,7 @@ const form = useForm({
 const submit = () => {
     form.transform((data) => ({
         ...data,
+        user_id: data.user_id === 'none' ? null : data.user_id,
         carrier_party_id:
             data.carrier_party_id === 'none' ? null : data.carrier_party_id,
     }));
@@ -109,6 +112,28 @@ const submit = () => {
                         type="date"
                     />
                     <InputError :message="form.errors.license_expires_at" />
+                </div>
+
+                <div class="grid gap-2">
+                    <Label for="driver-user">{{ $t('Login') }}</Label>
+                    <Select v-model="form.user_id">
+                        <SelectTrigger id="driver-user" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">
+                                {{ $t('Not linked') }}
+                            </SelectItem>
+                            <SelectItem
+                                v-for="item in members"
+                                :key="item.value"
+                                :value="item.value"
+                            >
+                                {{ item.label }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.user_id" />
                 </div>
 
                 <div class="grid gap-2">

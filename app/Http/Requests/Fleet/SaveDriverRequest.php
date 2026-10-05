@@ -14,7 +14,7 @@ class SaveDriverRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        foreach (['carrier_party_id', 'license_number', 'license_expires_at'] as $field) {
+        foreach (['user_id', 'carrier_party_id', 'license_number', 'license_expires_at'] as $field) {
             if (! $this->filled($field)) {
                 $this->merge([$field => null]);
             }
@@ -39,6 +39,15 @@ class SaveDriverRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('team_members', 'user_id')->where('team_id', $this->team()->id),
+                Rule::unique('drivers', 'user_id')
+                    ->where('team_id', $this->team()->id)
+                    ->withoutTrashed()
+                    ->ignore($this->driver()?->id),
+            ],
             'carrier_party_id' => [
                 'nullable',
                 'integer',

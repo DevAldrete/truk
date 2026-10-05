@@ -25,6 +25,7 @@ const props = defineProps<{
     driver: Driver;
     teamSlug: string;
     carriers: Option[];
+    members: Option[];
     documentTypes: Option[];
     canManage: boolean;
 }>();
@@ -32,6 +33,7 @@ const props = defineProps<{
 const form = useForm({
     name: props.driver.name,
     phone: props.driver.phone,
+    user_id: props.driver.user_id ? String(props.driver.user_id) : 'none',
     license_number: props.driver.license_number ?? '',
     license_expires_at: props.driver.license_expires_at ?? '',
     carrier_party_id: props.driver.carrier_party_id
@@ -42,6 +44,7 @@ const form = useForm({
 const save = () => {
     form.transform((data) => ({
         ...data,
+        user_id: data.user_id === 'none' ? null : data.user_id,
         carrier_party_id:
             data.carrier_party_id === 'none' ? null : data.carrier_party_id,
     }));
@@ -150,6 +153,28 @@ const save = () => {
                         :disabled="!canManage"
                     />
                     <InputError :message="form.errors.license_expires_at" />
+                </div>
+
+                <div class="grid gap-2 sm:col-span-3">
+                    <Label for="driver-user">{{ $t('Login') }}</Label>
+                    <Select v-model="form.user_id" :disabled="!canManage">
+                        <SelectTrigger id="driver-user" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">
+                                {{ $t('Not linked') }}
+                            </SelectItem>
+                            <SelectItem
+                                v-for="item in members"
+                                :key="item.value"
+                                :value="item.value"
+                            >
+                                {{ item.label }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.user_id" />
                 </div>
 
                 <div class="grid gap-2 sm:col-span-3">

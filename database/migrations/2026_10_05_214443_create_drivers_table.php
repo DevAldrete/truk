@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('carrier_party_id')->nullable()->constrained('parties')->nullOnDelete();
             $table->string('name', 160);
             $table->string('phone', 40);
@@ -30,6 +31,12 @@ return new class extends Migration
         // is enforced with a partial index while the record is live.
         DB::statement(
             'CREATE UNIQUE INDEX drivers_team_id_license_number_unique ON drivers (team_id, license_number) WHERE deleted_at IS NULL'
+        );
+
+        // A login can back at most one live driver per team; a deleted driver
+        // must not reserve the login forever.
+        DB::statement(
+            'CREATE UNIQUE INDEX drivers_team_id_user_id_unique ON drivers (team_id, user_id) WHERE user_id IS NOT NULL AND deleted_at IS NULL'
         );
     }
 

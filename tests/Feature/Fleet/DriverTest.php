@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PartyType;
+use App\Enums\TeamPermission;
 use App\Enums\TeamRole;
 use App\Models\Driver;
 use App\Models\Party;
@@ -218,4 +219,83 @@ test('drivers of another team are not reachable', function () {
     $this->actingAs($user)
         ->delete(route('drivers.destroy', [$team, $otherDriver]))
         ->assertNotFound();
+});
+
+test('a driver can be linked to the login of a team member', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $driverUser = User::factory()->create();
+    $team->members()->attach($driverUser, ['role' => TeamRole::Driver->value]);
+
+    $response = $this->actingAs($user)->post(route('drivers.store', $team), [
+        'name' => 'Juan Pérez',
+        'phone' => '8112345678',
+        'user_id' => $driverUser->id,
+    ]);
+
+    $driver = Driver::query()->withoutGlobalScope('team')->sole();
+
+    $response->assertRedirect(route('drivers.show', [$team, $driver]));
+
+    expect($driver->user_id)->toBe($driverUser->id)
+        ->and($driverUser->driverProfileFor($team)?->id)->toBe($driver->id);
+});
+
+test('a driver can only be linked to a login of the same team', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $outsider = User::factory()->create();
+
+    $response = $this->actingAs($user)
+        ->from(route('drivers.index', $team))
+        ->post(route('drivers.store', $team), [
+            'name' => 'Juan Pérez',
+            'phone' => '8112345678',
+            'user_id' => $outsider->id,
+        ]);
+
+    $response->assertSessionHasErrors('user_id');
+
+    $this->assertDatabaseCount('drivers', 0);
+});
+
+test('a login cannot back two live drivers but is released after a soft delete', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $driverUser = User::factory()->create();
+    $team->members()->attach($driverUser, ['role' => TeamRole::Driver->value]);
+    $driver = Driver::factory()->for($team)->create(['user_id' => $driverUser->id]);
+
+    $this->actingAs($user)
+        ->from(route('drivers.index', $team))
+        ->post(route('drivers.store', $team), [
+            'name' => 'María López',
+            'phone' => '8198765432',
+            'user_id' => $driverUser->id,
+        ])
+        ->assertSessionHasErrors('user_id');
+
+    $driver->delete();
+
+    $this->actingAs($user)
+        ->post(route('drivers.store', $team), [
+            'name' => 'María López',
+            'phone' => '8198765432',
+            'user_id' => $driverUser->id,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseCount('drivers', 2);
+});
+
+test('the driver role may execute operations but not manage the catalog', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Driver->value]);
+
+    expect($user->hasTeamPermission($team, TeamPermission::ExecuteOperations))->toBeTrue()
+        ->and($user->hasTeamPermission($team, TeamPermission::ManageCatalog))->toBeFalse();
 });

@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $team_id
+ * @property int|null $user_id
  * @property int|null $carrier_party_id
  * @property string $name
  * @property string $phone
@@ -28,9 +29,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, ComplianceDocument> $documents
  * @property-read Party|null $carrierParty
+ * @property-read User|null $user
  * @property-read Team $team
  */
-#[Fillable(['carrier_party_id', 'name', 'phone', 'license_number', 'license_expires_at'])]
+#[Fillable(['user_id', 'carrier_party_id', 'name', 'phone', 'license_number', 'license_expires_at'])]
 class Driver extends Model
 {
     /** @use HasFactory<DriverFactory> */
@@ -44,6 +46,16 @@ class Driver extends Model
     public function carrierParty(): BelongsTo
     {
         return $this->belongsTo(Party::class, 'carrier_party_id');
+    }
+
+    /**
+     * Get the login linked to this driver, when any.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

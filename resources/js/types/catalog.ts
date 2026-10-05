@@ -84,6 +84,8 @@ export type Driver = {
     id: number;
     name: string;
     phone: string;
+    user_id: number | null;
+    user_name: string | null;
     license_number: string | null;
     license_expires_at: string | null;
     license_expired: boolean;

@@ -93,7 +93,7 @@ class DriverController extends Controller
 
         return [
             'drivers' => Driver::query()
-                ->with(['carrierParty:id,name', 'documents'])
+                ->with(['carrierParty:id,name', 'user:id,name', 'documents'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
                     ->orWhereRaw('LOWER(phone) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -112,6 +112,11 @@ class DriverController extends Controller
                 ->map(fn ($party) => ['value' => (string) $party->id, 'label' => $party->name])
                 ->all(),
             'documentTypes' => ComplianceDocumentType::options(),
+            'members' => $team->members()
+                ->orderBy('name')
+                ->get(['users.id', 'users.name', 'users.email'])
+                ->map(fn ($member) => ['value' => (string) $member->id, 'label' => $member->name.' · '.$member->email])
+                ->all(),
             'can' => [
                 'manage' => $request->user()->hasTeamPermission($team, TeamPermission::ManageCatalog),
             ],
@@ -129,6 +134,8 @@ class DriverController extends Controller
             'id' => $driver->id,
             'name' => $driver->name,
             'phone' => $driver->phone,
+            'user_id' => $driver->user_id,
+            'user_name' => $driver->user?->name,
             'license_number' => $driver->license_number,
             'license_expires_at' => $driver->license_expires_at?->toDateString(),
             'license_expired' => $driver->license_expires_at?->isPast() ?? false,
