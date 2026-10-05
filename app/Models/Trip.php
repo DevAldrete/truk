@@ -36,6 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, TripAssignment> $assignments
  * @property-read Collection<int, Stop> $stops
+ * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Driver|null $driver
  * @property-read Vehicle|null $vehicle
  * @property-read Trailer|null $trailer
@@ -105,6 +106,16 @@ class Trip extends Model
     public function stops(): HasMany
     {
         return $this->hasMany(Stop::class);
+    }
+
+    /**
+     * Get the package scans recorded on this trip.
+     *
+     * @return HasMany<ScanEvent, $this>
+     */
+    public function scanEvents(): HasMany
+    {
+        return $this->hasMany(ScanEvent::class);
     }
 
     /**

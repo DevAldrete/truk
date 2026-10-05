@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Dispatch\DispatchController;
 use App\Http\Controllers\Driver\DeliveryAttemptController;
+use App\Http\Controllers\Driver\ScanController;
 use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\Fleet\DriverDocumentController;
 use App\Http\Controllers\Fleet\TrailerController;
@@ -147,6 +148,8 @@ Route::prefix('{current_team}')
                 Route::post('trips/{trip}/stops/{stop}/attempts', [DeliveryAttemptController::class, 'store'])
                     ->name('trips.stops.attempts.store');
             });
+
+            Route::post('trips/{trip}/scans', [ScanController::class, 'store'])->name('trips.scans.store');
         });
     });
 

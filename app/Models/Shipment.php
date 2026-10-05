@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, ShipmentItem> $items
  * @property-read Collection<int, Package> $packages
+ * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Order|null $order
  * @property-read Load|null $loadGroup
  * @property-read Location|null $pickupLocation
@@ -101,6 +102,16 @@ class Shipment extends Model
     public function deliveryAttemptLines(): HasMany
     {
         return $this->hasMany(DeliveryAttemptLine::class);
+    }
+
+    /**
+     * Get the package custody scans of this shipment.
+     *
+     * @return HasMany<ScanEvent, $this>
+     */
+    public function scanEvents(): HasMany
+    {
+        return $this->hasMany(ScanEvent::class);
     }
 
     /**
