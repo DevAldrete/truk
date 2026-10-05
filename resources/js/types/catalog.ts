@@ -88,6 +88,19 @@ export type Vehicle = {
     max_volume_m3: number | null;
 };
 
+export type Trailer = {
+    id: number;
+    name: string;
+    plate: string;
+    configuration: string;
+    carrier_party_id: number | null;
+    carrier_name: string | null;
+    max_payload_grams: number;
+    max_payload_kg: number;
+    max_volume_cm3: number | null;
+    max_volume_m3: number | null;
+};
+
 export type SearchResult = {
     type: 'party' | 'location';
     title: string;

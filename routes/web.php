@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Fleet\DriverController;
+use App\Http\Controllers\Fleet\TrailerController;
 use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Locations\LocationController;
@@ -51,6 +52,12 @@ Route::prefix('{current_team}')
         Route::get('vehicles/{vehicle}', [VehicleController::class, 'show'])->name('vehicles.show');
         Route::patch('vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
         Route::delete('vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
+
+        Route::get('trailers', [TrailerController::class, 'index'])->name('trailers.index');
+        Route::post('trailers', [TrailerController::class, 'store'])->name('trailers.store');
+        Route::get('trailers/{trailer}', [TrailerController::class, 'show'])->name('trailers.show');
+        Route::patch('trailers/{trailer}', [TrailerController::class, 'update'])->name('trailers.update');
+        Route::delete('trailers/{trailer}', [TrailerController::class, 'destroy'])->name('trailers.destroy');
     });
 
 Route::middleware(['auth'])->group(function () {
