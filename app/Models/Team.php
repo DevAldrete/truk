@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, TeamInvitation> $invitations
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
+ * @property-read Collection<int, Driver> $drivers
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -123,6 +124,16 @@ class Team extends Model
     public function partyContacts(): HasMany
     {
         return $this->hasMany(PartyContact::class);
+    }
+
+    /**
+     * Get all drivers registered by this team, own fleet or subcontracted.
+     *
+     * @return HasMany<Driver, $this>
+     */
+    public function drivers(): HasMany
+    {
+        return $this->hasMany(Driver::class);
     }
 
     /**

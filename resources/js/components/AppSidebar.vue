@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Building2, LayoutGrid, MapPin } from '@lucide/vue';
+import { Building2, LayoutGrid, MapPin, Users } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -16,6 +16,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { t } from '@/lib/i18n';
+import { index as driversIndex } from '@/routes/drivers';
 import { index as locationsIndex } from '@/routes/locations';
 import { index as partiesIndex } from '@/routes/parties';
 import { dashboard } from '@/routes';
@@ -46,6 +47,14 @@ const mainNavItems = computed<NavItem[]>(() => [
         icon: MapPin,
     },
 ]);
+
+const fleetNavItems = computed<NavItem[]>(() => [
+    {
+        title: t('Drivers'),
+        href: driversIndex.url({ current_team: teamSlug.value }),
+        icon: Users,
+    },
+]);
 </script>
 
 <template>
@@ -68,7 +77,8 @@ const mainNavItems = computed<NavItem[]>(() => [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="mainNavItems" :label="t('Operations')" />
+            <NavMain :items="fleetNavItems" :label="t('Fleet')" />
         </SidebarContent>
 
         <SidebarFooter>

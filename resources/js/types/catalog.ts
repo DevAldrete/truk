@@ -64,6 +64,17 @@ export type Location = {
     references: string | null;
 };
 
+export type Driver = {
+    id: number;
+    name: string;
+    phone: string;
+    license_number: string | null;
+    license_expires_at: string | null;
+    license_expired: boolean;
+    carrier_party_id: number | null;
+    carrier_name: string | null;
+};
+
 export type SearchResult = {
     type: 'party' | 'location';
     title: string;

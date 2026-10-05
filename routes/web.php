@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Locations\LocationController;
 use App\Http\Controllers\Parties\PartyContactController;
@@ -37,6 +38,12 @@ Route::prefix('{current_team}')
         Route::get('locations/{location}', [LocationController::class, 'show'])->name('locations.show');
         Route::patch('locations/{location}', [LocationController::class, 'update'])->name('locations.update');
         Route::delete('locations/{location}', [LocationController::class, 'destroy'])->name('locations.destroy');
+
+        Route::get('drivers', [DriverController::class, 'index'])->name('drivers.index');
+        Route::post('drivers', [DriverController::class, 'store'])->name('drivers.store');
+        Route::get('drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
+        Route::patch('drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
+        Route::delete('drivers/{driver}', [DriverController::class, 'destroy'])->name('drivers.destroy');
     });
 
 Route::middleware(['auth'])->group(function () {
