@@ -25,6 +25,14 @@ class TeamPolicy
     }
 
     /**
+     * Determine whether the user can maintain the master data of the team.
+     */
+    public function manageCatalog(User $user, Team $team): bool
+    {
+        return $user->hasTeamPermission($team, TeamPermission::ManageCatalog);
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool

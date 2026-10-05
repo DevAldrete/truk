@@ -32,9 +32,12 @@ enum TeamRole: string
                 TeamPermission::UpdateTeam,
                 TeamPermission::CreateInvitation,
                 TeamPermission::CancelInvitation,
+                TeamPermission::ManageCatalog,
             ],
             self::Dispatcher,
-            self::Warehouse,
+            self::Warehouse => [
+                TeamPermission::ManageCatalog,
+            ],
             self::Driver,
             self::Member => [],
         };
