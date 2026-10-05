@@ -332,6 +332,37 @@ export type TripAssignmentRef = {
 
 export type TripDetail = Trip & {
     assignments: TripAssignmentRef[];
+    stops: StopRef[];
+};
+
+export type StopType = 'pickup' | 'delivery' | 'other';
+
+export type StopStatus =
+    | 'pending'
+    | 'arrived'
+    | 'completed'
+    | 'failed'
+    | 'skipped';
+
+export type StopShipmentRef = {
+    id: number;
+    number: string;
+    customer_name: string | null;
+};
+
+export type StopRef = {
+    id: number;
+    sequence: number;
+    type: StopType;
+    type_label: string;
+    status: StopStatus;
+    status_label: string;
+    location_id: number | null;
+    location_name: string | null;
+    location_snapshot: LocationSnapshot | null;
+    planned_at: string | null;
+    notes: string | null;
+    shipments: StopShipmentRef[];
 };
 
 export type SearchResult = {

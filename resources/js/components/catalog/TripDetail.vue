@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
+import { ArrowDown, ArrowUp, Plus, Trash2 } from '@lucide/vue';
+import { computed, reactive } from 'vue';
 import InputError from '@/components/InputError.vue';
 import DeleteButton from '@/components/catalog/DeleteButton.vue';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { destroy, update } from '@/routes/trips';
 import { update as updateResources } from '@/routes/trips/resources';
+import { destroy as destroyStop, reorder, store as storeStop } from '@/routes/trips/stops';
+import { destroy as detachStopShipment, store as attachStopShipment } from '@/routes/trips/stops/shipments';
 import { t } from '@/lib/i18n';
 import type { Option, TripDetail } from '@/types';
 
@@ -25,7 +28,11 @@ const props = defineProps<{
     drivers: Option[];
     vehicles: Option[];
     trailers: Option[];
+    locations: Option[];
+    shipments: Option[];
     statuses: Option[];
+    stopTypes: Option[];
+    stopStatuses: Option[];
     canManage: boolean;
 }>();
 
@@ -103,6 +110,95 @@ const resourceLabel = (resource: string): string =>
         : resource === 'vehicle'
           ? t('Vehicle')
           : t('Trailer');
+
+const stopForm = useForm({
+    type: 'delivery',
+    location_id: 'none',
+    planned_at: '',
+    status: 'pending',
+    notes: '',
+});
+
+const submitStop = () => {
+    stopForm.transform((data) => ({
+        ...data,
+        location_id: data.location_id === 'none' ? null : data.location_id,
+        planned_at: data.planned_at || null,
+    }));
+
+    stopForm.post(
+        storeStop.url({ current_team: props.teamSlug, trip: props.trip.id }),
+        {
+            preserveScroll: true,
+            onSuccess: () => stopForm.reset(),
+        },
+    );
+};
+
+const attachSelection = reactive<Record<number, string>>({});
+
+const attachShipmentToStop = (stopId: number) => {
+    const shipmentId = attachSelection[stopId];
+
+    if (!shipmentId || shipmentId === 'none') {
+        return;
+    }
+
+    router.post(
+        attachStopShipment.url({
+            current_team: props.teamSlug,
+            trip: props.trip.id,
+            stop: stopId,
+        }),
+        { shipment_id: shipmentId },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                attachSelection[stopId] = 'none';
+            },
+        },
+    );
+};
+
+const detachShipmentFromStop = (stopId: number, shipmentId: number) => {
+    router.delete(
+        detachStopShipment.url({
+            current_team: props.teamSlug,
+            trip: props.trip.id,
+            stop: stopId,
+            shipment: shipmentId,
+        }),
+        { preserveScroll: true },
+    );
+};
+
+const removeStop = (stopId: number) => {
+    router.delete(
+        destroyStop.url({
+            current_team: props.teamSlug,
+            trip: props.trip.id,
+            stop: stopId,
+        }),
+        { preserveScroll: true },
+    );
+};
+
+const moveStop = (index: number, direction: number) => {
+    const ids = props.trip.stops.map((stop) => stop.id);
+    const target = index + direction;
+
+    if (target < 0 || target >= ids.length) {
+        return;
+    }
+
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+
+    router.put(
+        reorder.url({ current_team: props.teamSlug, trip: props.trip.id }),
+        { stop_ids: ids },
+        { preserveScroll: true },
+    );
+};
 </script>
 
 <template>
@@ -371,6 +467,198 @@ const resourceLabel = (resource: string): string =>
                         </span>
                     </li>
                 </ul>
+            </section>
+
+            <section class="mt-6">
+                <h3 class="text-sm font-semibold">{{ $t('Stops') }}</h3>
+
+                <ol v-if="trip.stops.length" class="mt-2 space-y-2">
+                    <li
+                        v-for="(stop, index) in trip.stops"
+                        :key="stop.id"
+                        class="rounded-lg border p-3"
+                        :data-test="`stop-${stop.id}`"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium">
+                                    <span class="text-muted-foreground">
+                                        {{ stop.sequence }}.
+                                    </span>
+                                    {{ stop.type_label }}
+                                    <span class="text-xs text-muted-foreground">
+                                        · {{ stop.status_label }}
+                                    </span>
+                                </p>
+                                <p class="truncate text-xs text-muted-foreground">
+                                    {{ stop.location_name ?? $t('No site') }}
+                                </p>
+                            </div>
+
+                            <div v-if="canManage" class="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-7"
+                                    :disabled="index === 0"
+                                    @click="moveStop(index, -1)"
+                                >
+                                    <ArrowUp class="size-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-7"
+                                    :disabled="index === trip.stops.length - 1"
+                                    @click="moveStop(index, 1)"
+                                >
+                                    <ArrowDown class="size-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="size-7 text-muted-foreground hover:text-destructive"
+                                    @click="removeStop(stop.id)"
+                                >
+                                    <Trash2 class="size-3.5" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="stop.shipments.length"
+                            class="mt-2 flex flex-wrap gap-2"
+                        >
+                            <span
+                                v-for="shipment in stop.shipments"
+                                :key="shipment.id"
+                                class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
+                            >
+                                {{ shipment.number }}
+                                <button
+                                    v-if="canManage"
+                                    type="button"
+                                    class="text-muted-foreground hover:text-destructive"
+                                    @click="
+                                        detachShipmentFromStop(
+                                            stop.id,
+                                            shipment.id,
+                                        )
+                                    "
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        </div>
+
+                        <div v-if="canManage" class="mt-2 flex items-center gap-2">
+                            <Select
+                                :model-value="attachSelection[stop.id] ?? 'none'"
+                                @update:model-value="
+                                    (value) =>
+                                        (attachSelection[stop.id] =
+                                            String(value))
+                                "
+                            >
+                                <SelectTrigger class="h-8 w-56">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">
+                                        {{ $t('Select a shipment') }}
+                                    </SelectItem>
+                                    <SelectItem
+                                        v-for="item in shipments"
+                                        :key="item.value"
+                                        :value="item.value"
+                                    >
+                                        {{ item.label }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                @click="attachShipmentToStop(stop.id)"
+                            >
+                                <Plus class="size-3.5" />
+                            </Button>
+                        </div>
+                    </li>
+                </ol>
+
+                <p v-else class="mt-2 text-sm text-muted-foreground">
+                    {{ $t('No stops yet.') }}
+                </p>
+
+                <form
+                    v-if="canManage"
+                    class="mt-3 grid gap-3 rounded-lg border p-3 sm:grid-cols-4"
+                    @submit.prevent="submitStop"
+                >
+                    <div class="grid gap-2">
+                        <Label for="stop-type">{{ $t('Type') }}</Label>
+                        <Select v-model="stopForm.type">
+                            <SelectTrigger id="stop-type" class="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="item in stopTypes"
+                                    :key="item.value"
+                                    :value="item.value"
+                                >
+                                    {{ item.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="stopForm.errors.type" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="stop-location">{{ $t('Site') }}</Label>
+                        <Select v-model="stopForm.location_id">
+                            <SelectTrigger id="stop-location" class="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">
+                                    {{ $t('None') }}
+                                </SelectItem>
+                                <SelectItem
+                                    v-for="item in locations"
+                                    :key="item.value"
+                                    :value="item.value"
+                                >
+                                    {{ item.label }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="stopForm.errors.location_id" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="stop-planned">{{ $t('Planned at') }}</Label>
+                        <Input
+                            id="stop-planned"
+                            v-model="stopForm.planned_at"
+                            type="datetime-local"
+                        />
+                        <InputError :message="stopForm.errors.planned_at" />
+                    </div>
+
+                    <div class="flex items-end">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            :disabled="stopForm.processing"
+                            data-test="add-stop"
+                        >
+                            <Plus class="size-4" />
+                            {{ $t('Add stop') }}
+                        </Button>
+                    </div>
+                </form>
             </section>
         </div>
     </div>

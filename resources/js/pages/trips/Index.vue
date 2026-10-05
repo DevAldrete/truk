@@ -28,6 +28,10 @@ const props = defineProps<{
     drivers: Option[];
     vehicles: Option[];
     trailers: Option[];
+    locations: Option[];
+    shipments: Option[];
+    stopTypes: Option[];
+    stopStatuses: Option[];
     trip?: TripDetailType;
     can: { manage: boolean };
 }>();
@@ -137,7 +141,11 @@ const status = ref(props.filters.status ?? 'all');
                 :drivers="drivers"
                 :vehicles="vehicles"
                 :trailers="trailers"
+                :locations="locations"
+                :shipments="shipments"
                 :statuses="statuses"
+                :stop-types="stopTypes"
+                :stop-statuses="stopStatuses"
                 :can-manage="can.manage"
             />
 

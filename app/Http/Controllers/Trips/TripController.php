@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Trips;
 
 use App\Actions\Trips\SaveTrip;
+use App\Enums\StopStatus;
+use App\Enums\StopType;
 use App\Enums\TeamPermission;
 use App\Enums\TripStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Trips\SaveTripRequest;
+use App\Models\Shipment;
+use App\Models\Stop;
 use App\Models\Team;
 use App\Models\Trip;
 use App\Models\TripAssignment;
@@ -128,6 +132,12 @@ class TripController extends Controller
                 ->map(fn ($vehicle) => ['value' => (string) $vehicle->id, 'label' => $vehicle->name.' · '.$vehicle->plate])->all(),
             'trailers' => $team->trailers()->orderBy('name')->get(['id', 'name', 'plate'])
                 ->map(fn ($trailer) => ['value' => (string) $trailer->id, 'label' => $trailer->name.' · '.$trailer->plate])->all(),
+            'locations' => $team->locations()->orderBy('name')->get(['id', 'name', 'city'])
+                ->map(fn ($location) => ['value' => (string) $location->id, 'label' => $location->name.' · '.$location->city])->all(),
+            'shipments' => Shipment::query()->orderByDesc('id')->limit(100)->get(['id', 'number', 'customer_name'])
+                ->map(fn (Shipment $shipment) => ['value' => (string) $shipment->id, 'label' => $shipment->number.' · '.($shipment->customer_name ?? __('No customer'))])->all(),
+            'stopTypes' => StopType::options(),
+            'stopStatuses' => StopStatus::options(),
             'can' => [
                 'manage' => $request->user()->hasTeamPermission($team, TeamPermission::ManageOperations),
             ],
@@ -169,6 +179,7 @@ class TripController extends Controller
     {
         $trip->load(['driver:id,name', 'vehicle:id,name', 'trailer:id,name']);
         $trip->load(['assignments' => fn ($query) => $query->with(['driver:id,name', 'vehicle:id,name', 'trailer:id,name'])->orderByDesc('id')]);
+        $trip->load(['stops' => fn ($query) => $query->with(['location:id,name,city', 'shipments'])->orderBy('sequence')]);
 
         return [
             ...$this->summary($trip),
@@ -179,6 +190,28 @@ class TripController extends Controller
                     'name' => $this->resourceName($assignment),
                     'assigned_at' => $assignment->assigned_at->toIso8601String(),
                     'released_at' => $assignment->released_at?->toIso8601String(),
+                ])
+                ->all(),
+            'stops' => $trip->stops
+                ->map(fn (Stop $stop): array => [
+                    'id' => $stop->id,
+                    'sequence' => $stop->sequence,
+                    'type' => $stop->type->value,
+                    'type_label' => $stop->type->label(),
+                    'status' => $stop->status->value,
+                    'status_label' => $stop->status->label(),
+                    'location_id' => $stop->location_id,
+                    'location_name' => $stop->location?->name,
+                    'location_snapshot' => $stop->location_snapshot,
+                    'planned_at' => $stop->planned_at?->toIso8601String(),
+                    'notes' => $stop->notes,
+                    'shipments' => $stop->shipments
+                        ->map(fn (Shipment $shipment): array => [
+                            'id' => $shipment->id,
+                            'number' => $shipment->number,
+                            'customer_name' => $shipment->customer_name,
+                        ])
+                        ->all(),
                 ])
                 ->all(),
         ];

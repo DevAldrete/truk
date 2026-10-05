@@ -19,6 +19,9 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Shipments\ShipmentController;
 use App\Http\Controllers\Shipments\ShipmentPackageController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\Trips\StopController;
+use App\Http\Controllers\Trips\StopReorderController;
+use App\Http\Controllers\Trips\StopShipmentController;
 use App\Http\Controllers\Trips\TripController;
 use App\Http\Controllers\Trips\TripResourceController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -119,6 +122,15 @@ Route::prefix('{current_team}')
         Route::patch('trips/{trip}', [TripController::class, 'update'])->name('trips.update');
         Route::delete('trips/{trip}', [TripController::class, 'destroy'])->name('trips.destroy');
         Route::put('trips/{trip}/resources', [TripResourceController::class, 'update'])->name('trips.resources.update');
+
+        Route::scopeBindings()->group(function () {
+            Route::post('trips/{trip}/stops', [StopController::class, 'store'])->name('trips.stops.store');
+            Route::put('trips/{trip}/stops/reorder', [StopReorderController::class, 'update'])->name('trips.stops.reorder');
+            Route::patch('trips/{trip}/stops/{stop}', [StopController::class, 'update'])->name('trips.stops.update');
+            Route::delete('trips/{trip}/stops/{stop}', [StopController::class, 'destroy'])->name('trips.stops.destroy');
+            Route::post('trips/{trip}/stops/{stop}/shipments', [StopShipmentController::class, 'store'])->name('trips.stops.shipments.store');
+            Route::delete('trips/{trip}/stops/{stop}/shipments/{shipment}', [StopShipmentController::class, 'destroy'])->name('trips.stops.shipments.destroy');
+        });
     });
 
 Route::middleware(['auth'])->group(function () {

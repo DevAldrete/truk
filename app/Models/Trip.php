@@ -32,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, TripAssignment> $assignments
+ * @property-read Collection<int, Stop> $stops
  * @property-read Driver|null $driver
  * @property-read Vehicle|null $vehicle
  * @property-read Trailer|null $trailer
@@ -91,6 +92,16 @@ class Trip extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(TripAssignment::class);
+    }
+
+    /**
+     * Get the ordered stops of this trip.
+     *
+     * @return HasMany<Stop, $this>
+     */
+    public function stops(): HasMany
+    {
+        return $this->hasMany(Stop::class);
     }
 
     /**

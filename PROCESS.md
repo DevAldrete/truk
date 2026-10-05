@@ -67,7 +67,7 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 | **P1a**  | Parties (+contacts), Locations, ⌘K command palette                                              | ✅ Done    |
 | **P1b**  | Drivers, Vehicles, Trailers, Compliance documents                                               | ✅ Done    |
 | **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
-| **P3**   | Planning & dispatch: loads ✅, trips ✅, stops, capacity, dispatch board                         | 🚧 In progress |
+| **P3**   | Planning & dispatch: loads ✅, trips ✅, stops ✅, capacity guard, dispatch board                | 🚧 In progress |
 | **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ⬜         |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
@@ -438,9 +438,6 @@ Goal: answer _"can this unit move this load, legally and physically, and is it f
 - Feature tests: CRUD, grouping, transitions, scoped bindings, authorization,
   tenant isolation.
 
-**Remaining:** stops + `stop_shipments` (ordered sequencing), the capacity guard,
-and the dispatch board.
-
 **Delivered (slice 2):**
 
 - `trips` (planned window, timezone, `TripStatus` transition map) and
@@ -452,6 +449,19 @@ and the dispatch board.
   history; search, sidebar and ⌘K entries; bilingual copy.
 - Feature tests: CRUD, transitions, assignment + history, overlap conflict,
   non-overlap, cross-team resources, authorization and tenant isolation.
+
+**Delivered (slice 3):**
+
+- `stops` (ordered, typed, status machine, address snapshot) and `stop_shipments`
+  (shipments reach trips through stops, per the domain rule).
+- Add/update/delete stops, attach/detach shipments, and reorder through
+  `ReorderStops`; all nested and scoped under the trip.
+- Stops section in the trip detail: sequence, type, site, shipment chips, move
+  up/down, add-stop form; bilingual copy.
+- Feature tests: sequencing, snapshot, attach/detach, reorder, scoped bindings,
+  status transitions, authorization.
+
+**Remaining:** the capacity guard and the dispatch board.
 
 - **Entities:** `loads`, `trips`, `trip_assignments`, `stops`, `stop_shipments`,
   `trip_compliance` (payload snapshot), `resource_reservations`.
