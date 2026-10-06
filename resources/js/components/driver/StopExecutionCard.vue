@@ -5,6 +5,7 @@ import ExpenseSheet from '@/components/driver/ExpenseSheet.vue';
 import IncidentSheet from '@/components/driver/IncidentSheet.vue';
 import PodSheet from '@/components/driver/PodSheet.vue';
 import ScanSheet from '@/components/driver/ScanSheet.vue';
+import StopStatusButtons from '@/components/driver/StopStatusButtons.vue';
 import type { DriverOptions, DriverStop } from '@/types';
 
 const props = defineProps<{
@@ -152,6 +153,11 @@ const hasPackages = (index: number) =>
         </div>
 
         <footer class="flex flex-wrap gap-2 border-t p-3">
+            <StopStatusButtons
+                :team-slug="teamSlug"
+                :trip-id="tripId"
+                :stop="stop"
+            />
             <DeliveryAttemptSheet
                 :team-slug="teamSlug"
                 :trip-id="tripId"

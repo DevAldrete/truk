@@ -50,10 +50,16 @@ export function useOfflineQueue() {
         try {
             for (const item of items.value) {
                 try {
+                    const method = item.method.toUpperCase();
+                    const body =
+                        method === 'POST'
+                            ? item.payload
+                            : { ...item.payload, _method: method };
+
                     const response = await fetch(item.url, {
-                        method: item.method,
+                        method: 'POST',
                         headers: headers(),
-                        body: JSON.stringify(item.payload),
+                        body: JSON.stringify(body),
                     });
 
                     // A 4xx means the server rejected the command; drop it so a

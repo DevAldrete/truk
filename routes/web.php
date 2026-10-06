@@ -9,6 +9,7 @@ use App\Http\Controllers\Driver\IncidentController as DriverIncidentController;
 use App\Http\Controllers\Driver\PodEvidenceController;
 use App\Http\Controllers\Driver\ProofOfDeliveryController;
 use App\Http\Controllers\Driver\ScanController;
+use App\Http\Controllers\Driver\StopStatusController;
 use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\Fleet\DriverDocumentController;
 use App\Http\Controllers\Fleet\TrailerController;
@@ -160,6 +161,8 @@ Route::prefix('{current_team}')
                     ->name('trips.stops.attempts.store');
                 Route::post('trips/{trip}/stops/{stop}/pod', [ProofOfDeliveryController::class, 'store'])
                     ->name('trips.stops.pod.store');
+                Route::patch('trips/{trip}/stops/{stop}/status', [StopStatusController::class, 'update'])
+                    ->name('trips.stops.status.update');
             });
 
             Route::post('trips/{trip}/scans', [ScanController::class, 'store'])->name('trips.scans.store');
