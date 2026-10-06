@@ -59,6 +59,12 @@ The test suite is unaffected: `phpunit.xml` forces `DB_CONNECTION=sqlite` and
 - **`--with-form` is mandatory** when running `wayfinder:generate` by hand. The Vite
   plugin passes it (`formVariants: true` in `vite.config.ts`); without it every
   `.form()` call disappears from the generated routes and `vue-tsc` fails everywhere.
+- **`t()` must not run at module scope.** A static `defineOptions({ layout: { ... } })`
+  object is evaluated while the page module loads, before Inertia has set the page,
+  so `usePage().props` is undefined and SSR crashes with `Cannot read properties of
+  undefined (reading 'translations')`. Use the function form
+  `layout: () => ({ title: t('...') })`; it is evaluated at render time. The same
+  applies to `defineProps`/`withDefaults` defaults.
 - **`vp check --fix` on the whole repo reformats `IDEA.md` and `README.md`**, which
   already fail the markdown formatter. Only ever pass paths: `npx vp check --fix resources/js`.
 - **A shell that exported the old `.env` shadows the file.** `.env` is loaded
