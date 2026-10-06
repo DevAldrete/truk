@@ -15,9 +15,10 @@ deferred.
 
 **Stack (settled — do not re-litigate):** Laravel 13 + Inertia 3 + Vue 3 +
 Fortify + Wayfinder + Tailwind 4 + shadcn-vue (reka-ui) + Pest 5 + Larastan 7.
-PostgreSQL is the production source of truth (`database.sqlite` is the local dev
-DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
-**domain rules** apply, its stack does not.
+PostgreSQL is the source of truth; it runs in Docker Compose locally
+(`docker-compose.yml`) and the test suite pins SQLite `:memory:` via
+`phpunit.xml`. `IDEA.md` was originally written for a Node stack
+(Clerk/Zod/Drizzle); its **domain rules** apply, its stack does not.
 
 | Task             | Command                                                          |
 | ---------------- | ---------------------------------------------------------------- |
@@ -30,8 +31,28 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 | Build            | `npm run build`                                                  |
 | Routes           | `php artisan route:list --except-vendor`                         |
 | Wayfinder        | `php artisan wayfinder:generate --with-form`                     |
+| DB up            | `composer db:up` (`docker compose up -d --wait`)                 |
+| DB down          | `composer db:down`                                               |
+| DB rebuild+seed  | `composer db:reset` (`migrate:fresh --seed`)                     |
 
 `composer test` runs lint + types + the full suite.
+
+### Local database (PostgreSQL)
+
+PostgreSQL 16 runs in Docker; credentials come from `.env`
+(`DB_DATABASE=truk`, `DB_USERNAME=truk`, `DB_PASSWORD=secret`, port `5432`), so
+the app and the container agree. `composer db:up` starts it and waits for the
+healthcheck; `composer db:reset` rebuilds the schema and seeds the demo dataset.
+
+The seeder (`database/seeders/DemoSeeder.php`) creates **Transportes del Norte**:
+customers/carriers, sites with coordinates and timezones, fleet with compliance
+documents, six orders turned into shipments and packages, two loads, and three
+trips — one on the road with a delivered/partial/failed mix, PODs, scans,
+incidents, and fuel/toll/lodging expenses. Log in as `owner@truk.test`,
+`dispatcher@truk.test`, or `driver@truk.test` (password `password`).
+
+The test suite is unaffected: `phpunit.xml` forces `DB_CONNECTION=sqlite` and
+`DB_DATABASE=:memory:`, so `composer test` needs no database running.
 
 ### Gotchas that cost time before
 
@@ -52,8 +73,14 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 - **PHPStan hits the `php.ini` memory limit** at the default 128M, which also breaks
   `composer test` and `composer types:check`. Pass `--memory-limit=1G` or raise
   `memory_limit`.
-- `database/database.sqlite` is the dev database and is empty, so
-  `php artisan migrate:fresh` is safe.
+- **The shell can shadow the database too.** An exported `DB_CONNECTION=sqlite`
+  (from the old SQLite-only setup) makes artisan ignore the PostgreSQL `.env`
+  values. Run DB commands with `env -u DB_CONNECTION -u DB_HOST -u DB_PORT
+  -u DB_DATABASE -u DB_USERNAME -u DB_PASSWORD` if `migrate` unexpectedly talks
+  to SQLite.
+- **PostgreSQL is the real database now.** `database/database.sqlite` is only a
+  leftover from before Docker; the test suite uses an in-memory SQLite database
+  and never touches it.
 - `tests/Feature/LocaleTest.php` proves the locale chain. `Symfony\Request::create()`
   injects `Accept-Language: en-us,en` in tests, so a test that asserts Spanish must
   send a header or a session value.
@@ -791,6 +818,8 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 ## 13. File map
 
 ```
+docker-compose.yml                    local PostgreSQL 16 (credentials from .env)
+database/seeders/DemoSeeder.php       realistic "Transportes del Norte" demo dataset
 app/Concerns/BelongsToTeam.php        tenancy scope + team_id fill + team() relation
 app/Data/TeamContext.php              per-request/job tenant, set by EnsureTeamMembership
 app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, ComplianceDocumentType,

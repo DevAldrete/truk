@@ -55,6 +55,16 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "db:up": [
+            "docker compose up -d --wait"
+        ],
+        "db:down": [
+            "docker compose down"
+        ],
+        "db:reset": [
+            "docker compose up -d --wait",
+            "@php artisan migrate:fresh --seed --no-interaction"
+        ],
         "lint": [
             "pint --parallel"
         ],
