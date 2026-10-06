@@ -16,10 +16,10 @@ import { request } from '@/routes/password';
 import type { TeamInvitationContext } from '@/types';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         title: t('Log in to your account'),
         description: t('Enter your email and password below to log in'),
-    },
+    }),
 });
 
 defineProps<{

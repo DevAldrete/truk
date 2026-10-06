@@ -6,14 +6,14 @@ import { t } from '@/lib/i18n';
 import { edit } from '@/routes/appearance';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         breadcrumbs: [
             {
                 title: t('Appearance settings'),
                 href: edit(),
             },
         ],
-    },
+    }),
 });
 </script>
 

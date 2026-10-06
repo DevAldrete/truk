@@ -9,12 +9,12 @@ import { t } from '@/lib/i18n';
 import { store } from '@/routes/password/confirm';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         title: t('Confirm password'),
         description: t(
             'This is a secure area of the application. Please confirm your password before continuing.',
         ),
-    },
+    }),
 });
 </script>
 

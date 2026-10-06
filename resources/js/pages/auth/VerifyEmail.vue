@@ -8,12 +8,12 @@ import { logout } from '@/routes';
 import { send } from '@/routes/verification';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         title: t('Email verification'),
         description: t(
             'Please verify your email address by clicking on the link we just emailed to you.',
         ),
-    },
+    }),
 });
 
 defineProps<{

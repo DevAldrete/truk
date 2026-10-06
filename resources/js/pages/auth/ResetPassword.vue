@@ -11,10 +11,10 @@ import { t } from '@/lib/i18n';
 import { update } from '@/routes/password';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         title: t('Reset password'),
         description: t('Please enter your new password below'),
-    },
+    }),
 });
 
 const props = defineProps<{

@@ -19,10 +19,10 @@ defineProps<{
 }>();
 
 defineOptions({
-    layout: {
+    layout: () => ({
         title: t('Create an account'),
         description: t('Enter your details below to create your account'),
-    },
+    }),
 });
 </script>
 

@@ -17,14 +17,14 @@ type Props = {
 const props = defineProps<Props>();
 
 defineOptions({
-    layout: {
+    layout: () => ({
         breadcrumbs: [
             {
                 title: t('Security settings'),
                 href: edit(),
             },
         ],
-    },
+    }),
 });
 </script>
 

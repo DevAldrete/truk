@@ -10,7 +10,10 @@ type Replacements = Record<string, string | number>;
  * renders in English instead of showing a key.
  */
 export function t(key: string, replacements: Replacements = {}): string {
-    const translations = (usePage().props.translations ?? {}) as Record<
+    // `props` can be absent when this runs outside a rendered page, e.g. during
+    // SSR while a page module is being evaluated (Inertia types it as always
+    // present). Fall back to the key, which is the English source string.
+    const translations = (usePage().props?.translations ?? {}) as Record<
         string,
         string
     >;

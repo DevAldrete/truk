@@ -11,10 +11,10 @@ import { login } from '@/routes';
 import { email } from '@/routes/password';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         title: t('Forgot password'),
         description: t('Enter your email to receive a password reset link'),
-    },
+    }),
 });
 
 defineProps<{

@@ -42,3 +42,6 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+
+# Local SQLite artifact if DB_CONNECTION is shadowed to sqlite with DB_DATABASE=truk
+/truk

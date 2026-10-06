@@ -14,14 +14,14 @@ import { edit } from '@/routes/profile';
 import { send } from '@/routes/verification';
 
 defineOptions({
-    layout: {
+    layout: () => ({
         breadcrumbs: [
             {
                 title: t('Profile settings'),
                 href: edit(),
             },
         ],
-    },
+    }),
 });
 
 const page = usePage();

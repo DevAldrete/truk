@@ -34,14 +34,14 @@ const openLeaveTeamDialog = (team: Team) => {
 };
 
 defineOptions({
-    layout: {
+    layout: () => ({
         breadcrumbs: [
             {
                 title: t('Organizations'),
                 href: index(),
             },
         ],
-    },
+    }),
 });
 </script>
 
