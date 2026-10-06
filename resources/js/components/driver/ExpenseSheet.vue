@@ -83,6 +83,13 @@ const submit = () => {
         return;
     }
 
+    form.transform(() => ({
+        ...form.data(),
+        stop_id: props.stopId ?? null,
+        incurred_at: new Date().toISOString(),
+        idempotency_key: crypto.randomUUID(),
+    }));
+
     form.post(url.value, {
         preserveScroll: true,
         forceFormData: true,
