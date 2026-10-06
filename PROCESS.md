@@ -4,9 +4,10 @@ Working document: where the project stands, what comes next, and the decisions t
 are already locked in. Read this before starting a session. `README.md` holds the
 product scope, `IDEA.md` the domain rules; this file holds the _execution_ state.
 
-Last updated after the P1b milestone, with the scope locked to a **full-lifecycle
-TMS**: fiscal compliance (SAT/CFDI/Carta Porte), billing/settlement, and route
-optimization are now in scope, not deferred.
+Last updated after the P4 milestone (driver execution and the offline-first PWA),
+with the scope locked to a **full-lifecycle TMS**: fiscal compliance (SAT/CFDI/
+Carta Porte), billing/settlement, and route optimization are now in scope, not
+deferred.
 
 ---
 
@@ -68,7 +69,7 @@ DB). `IDEA.md` was originally written for a Node stack (Clerk/Zod/Drizzle); its
 | **P1b**  | Drivers, Vehicles, Trailers, Compliance documents                                               | ✅ Done    |
 | **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
 | **P3**   | Planning & dispatch: loads, trips, stops, capacity, dispatch board                              | ✅ Done    |
-| **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ⬜         |
+| **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ✅ Done    |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
 | **P7**   | Pricing & billing: rate engine, accessorials, fuel surcharge, 3-way match, invoicing, settlement | ⬜         |
@@ -230,6 +231,36 @@ The product is no longer a lean dispatch tool. Locked in:
   costing depend on them.
 - **Global catalogs exist** outside tenant scope (SAT, SCT, toll booths, units).
 - **Multi-currency is anticipated** in the money model even if MXN ships first.
+
+### 4.7 Computed in P4
+
+- **Execution is a separate permission from planning.** `ManageOperations` plans
+  and dispatches; `ExecuteOperations` records what happens on the road. The driver
+  role gains the latter. A driver may only touch the trip assigned to their linked
+  driver profile; a planner may touch any trip of the team.
+- **`drivers.user_id` is a per-team link**, partial-unique while live, released on
+  soft delete. A login can drive for several teams through several driver records.
+- **Delivery quantity lives on attempt lines**, not on the attempt header. The
+  header carries the outcome, reason, recipient, and location; the lines carry the
+  per-shipment quantities. `DeriveShipmentStatus` is the only writer of a shipment's
+  delivery status.
+- **A pending stop moves to `arrived` when an attempt is recorded**, but completing
+  a stop never marks a shipment delivered.
+- **Scans are replayed, not applied incrementally.** The package state is recomputed
+  from every scan ordered by `occurred_at`, so out-of-order and duplicate events are
+  harmless.
+- **POD is append-only with a private evidence disk.** Signature data URLs are
+  decoded server-side; photos and documents are validated uploads. Files are served
+  through an authorized controller, never directly; P5 turns these into short-lived
+  signed URLs.
+- **The offline queue carries JSON commands with a client idempotency key** and
+  replays them with method spoofing for PATCH. File uploads (POD photos, receipts)
+  require connectivity until P5 ships object storage and sync.
+- **`drivers` gained `user_id` by folding it into the create migration**, not an
+  `ALTER TABLE`: adding a foreign key through `Schema::table` on SQLite rebuilds the
+  table and silently drops raw partial indexes (the `WHERE deleted_at IS NULL`
+  predicate). Recreate the table from scratch when a partial index and a new FK must
+  coexist.
 
 ---
 
@@ -505,18 +536,63 @@ attempts, POD, exceptions, fuel expenses).
 
 ### P4 — driver execution
 
-Goal: a driver can run a trip end-to-end on a phone, offline.
+Goal: a driver can run a trip end-to-end on a phone, offline. **Complete.**
 
-- Responsive driver portal (its own shell, mobile-first) built as an **offline-first
-  PWA**: local cache of the assigned trip, a retry queue that syncs idempotently.
-- Delivery attempts with partial quantities; returns; failed-delivery reasons.
-- **Package scans** (barcode/QR) with custody transitions.
-- POD: signature, photos, recipient, consent, location; append-only.
-- **Incidents/exceptions** entity and workflow.
-- **Fuel/expenses:** liters, price/liter, odometer, tank, receipt photo; tolls as
-  generic expenses until the P9 catalog.
-- Add `drivers.user_id` to link a login to a driver.
-- **AC:** airplane-mode test passes; a double-submit returns the same row.
+**Delivered (slice 1): login linkage and permissions**
+
+- `drivers.user_id` (`nullOnDelete`) with a per-team partial unique index: a login
+  backs at most one live driver and is released on soft delete.
+- `TeamPermission::ExecuteOperations` granted to owner/admin/dispatcher/driver. A
+  driver executes only the trip assigned to them; a planner executes any trip of
+  the team.
+
+**Delivered (slice 2): delivery attempts**
+
+- `delivery_attempts` + `delivery_attempt_lines`, tenant-scoped and idempotent on
+  a client-generated key. `RecordDeliveryAttempt` guards the delivered quantity
+  against the planned pieces, records discrepancies instead of clamping, and moves
+  a pending stop to arrived.
+- `DeriveShipmentStatus` is the single, idempotent use case that turns successful
+  attempt lines into `delivered` / `partially_delivered` / `failed`; a completed
+  stop never marks a shipment delivered on its own.
+
+**Delivered (slice 3): package scans**
+
+- `scan_events`, append-only and ordered by `occurred_at`. `DerivePackageStatus`
+  replays scans through the allowed-transition map, so an out-of-order or invalid
+  event never moves a package backwards.
+
+**Delivered (slice 4): proof of delivery**
+
+- `proofs_of_delivery` stores recipient, consent, signature, photos, scanned
+  documents, and capture location. Append-only: a correction creates a new record.
+- Files live on a private `evidence` disk (`serve` disabled) and are streamed only
+  through a tenant-scoped controller; signature data URLs are decoded server-side.
+
+**Delivered (slice 5): incidents**
+
+- `incidents` with `open → investigating → resolved/dismissed`, idempotent
+  reporting attributed to the trip's driver, and an audited resolution that records
+  who resolved it, when, and why.
+
+**Delivered (slice 6): fuel and expenses**
+
+- `expenses` store money as integer minor units with a currency, fuel volume as
+  millilitres, distance as metres, and a private receipt. Fuel is first-class and
+  requires its volume; tolls stay generic until the P9 catalog.
+
+**Delivered (slice 7): the portal and the PWA**
+
+- Mobile-first driver portal with its own layout, a trip list, and a stop-by-stop
+  execution screen; action sheets for attempts, scans, POD (canvas signature),
+  incidents, and expenses; stop status buttons (`arrive`/`complete`/`fail`/`skip`).
+- Offline queue persists JSON commands with a client idempotency key and replays
+  them on reconnect (with method spoofing for PATCH); a service worker caches
+  navigations/assets and a web manifest makes the portal installable.
+
+**Remaining / deferred:** hardware barcode/QR capture, offline photo/receipt upload
+(lands with P5 private object storage and signed URLs), and deriving trip status
+from driver actions.
 
 ### P5 — visibility and hardening
 
@@ -697,7 +773,6 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 | `NavFooter.vue` is unused after the starter-kit links were removed                          | delete with the next nav change       |
 | No "restore" action for soft-deleted records                                                | a user asks for a deleted record back |
 | State/postal code are free text                                                             | SEPOMEX address catalog (P2/P9)       |
-| No coordinates/timezone on locations                                                         | P2 (routing/ETA/toll depend on it)    |
 | Full Spanish `validation.php` covers common rules only; anything else falls back to English | a missing message is reported         |
 | Contact "primary" flag, party multi-type                                                    | a workflow demands it                 |
 | Compliance document files                                                                   | P5 (private storage + signed URLs)    |
@@ -705,6 +780,10 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 | `⌘K` has no visible affordance in the header                                                | first UX polish pass                  |
 | Load/Trip feasibility is unmodelled (no drive-time estimate)                                | P8 (optimization)                     |
 | Soft delete everywhere vs. fiscal immutability                                             | P6 (stamped docs must never vanish)   |
+| Offline photo/receipt upload is online-only (the JSON queue carries text, not files)        | P5 (private object storage + sync)    |
+| POD evidence is authorized per request, not a signed short-lived URL                        | P5 (temporary URLs)                   |
+| Barcode/QR capture is manual code selection, no camera integration                           | a device scanner is requested         |
+| Trip status is not auto-derived from driver actions                                         | P5/P8                                 |
 
 ---
 
@@ -714,35 +793,61 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 app/Concerns/BelongsToTeam.php        tenancy scope + team_id fill + team() relation
 app/Data/TeamContext.php              per-request/job tenant, set by EnsureTeamMembership
 app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, ComplianceDocumentType,
-                                      OrderStatus, ShipmentStatus, PackageStatus
+                                      OrderStatus, ShipmentStatus, PackageStatus, LoadStatus, TripStatus,
+                                      StopStatus, StopType, DeliveryOutcome, DeliveryFailureReason,
+                                      ScanType, IncidentType/Severity/Status, ExpenseType
 app/Http/Controllers/Parties|Locations|SearchController.php
 app/Http/Controllers/Fleet/           Driver|Vehicle|Trailer (+ one document controller per parent)
 app/Http/Controllers/Orders/          OrderController, OrderShipmentController
 app/Http/Controllers/Shipments/       ShipmentController, ShipmentPackageController
-app/Actions/Orders|Shipments/         SaveOrder, ConvertOrderToShipment, StorePackages
+app/Http/Controllers/Loads/           LoadController, LoadShipmentController
+app/Http/Controllers/Trips/           TripController, TripResourceController, TripShipmentController,
+                                      TripDispatchController, StopController, StopReorderController,
+                                      StopShipmentController
+app/Http/Controllers/Dispatch/        DispatchController (the board)
+app/Http/Controllers/Driver/          DriverPortalController, DeliveryAttemptController, ScanController,
+                                      ProofOfDeliveryController, PodEvidenceController,
+                                      StopStatusController, IncidentController, ExpenseController
+app/Http/Controllers/Incidents/       IncidentController (planner resolution)
+app/Actions/Orders|Shipments/         SaveOrder, ConvertOrderToShipment, StorePackages,
+                                      DeriveShipmentStatus, DerivePackageStatus
+app/Actions/Trips/                    SaveTrip, AssignTripResources, ComputeTripCapacity, SaveStop,
+                                      ReorderStops, AssignShipmentToTrip, UnassignShipmentFromTrip
+app/Actions/Execution/                RecordDeliveryAttempt, RecordScan, RecordProofOfDelivery,
+                                      ReportIncident, UpdateIncidentStatus, RecordExpense,
+                                      UpdateStopStatus
 app/Http/Middleware/                  EnsureTeamMembership (priority: before binding), SetLocale
-app/Policies/TeamPolicy.php           manageCatalog
+app/Policies/TeamPolicy.php           manageCatalog, manageOperations, executeOperations, overrideCapacity
 app/Rules/Rfc.php                     RFC shape (no check digit yet)
+config/filesystems.php                private `evidence` disk (serve disabled) for POD and receipts
 lang/es.json                          the interface dictionary (English key → Spanish)
-lang/{es,en}/                         roles, party_types, compliance_document_types, validation, auth, passwords
+lang/{es,en}/                         roles, party_types, compliance_document_types, order/shipment/load/
+                                      trip/stop/package statuses, delivery/scan/incident/expense types
 resources/js/lib/i18n.ts              t() and the global $t
 resources/js/composables/useFilteredList.ts   URL-backed, debounced list filtering
+resources/js/composables/useOfflineQueue.ts   offline driver command queue (idempotent replay)
+resources/js/composables/useOnlineStatus.ts   connectivity tracking
 resources/js/components/CommandPalette.vue    ⌘K: nav commands + server search
-resources/js/components/catalog/      CatalogListLayout, party/location/fleet detail + form sheets,
-                                      ComplianceDocsSection + DocumentRow + DocumentForm,
-                                      OrderFormSheet/OrderDetail/OrderItemsEditor, ShipmentDetail
-resources/js/pages/                   parties/, locations/, fleet/{drivers,vehicles,trailers},
-                                      orders/, shipments/
+resources/js/components/catalog/      CatalogListLayout, party/location/fleet/order/shipment/load/trip
+                                      detail + form sheets, CapacityGauge, DispatchTripCard
+resources/js/components/driver/       StopExecutionCard + StopStatusButtons + attempt/scan/POD/incident/
+                                      expense sheets + OfflineBadge
+resources/js/layouts/driver/          DriverLayout (mobile-first portal shell)
+resources/js/pages/                   parties/, locations/, fleet/, orders/, shipments/, loads/, trips/,
+                                      dispatch/, driver/
+public/sw.js, public/manifest.webmanifest      offline-first PWA shell
 tests/Feature/Tenancy/                trait behaviour + the model convention test
 tests/Feature/Fleet/                  drivers, vehicles, trailers, compliance documents
 tests/Feature/Orders|Shipments/       orders, conversion, shipments, packages
+tests/Feature/Trips|Loads|Dispatch/   trips, stops, capacity, loads, the board
+tests/Feature/Execution/              delivery attempts, scans, POD, incidents, expenses, stop status,
+                                      driver portal
 ```
 
-Planned (not yet built): `app/Models` gains Load/Trip/Stop/Attempt/Pod/TrackingEvent/
-Position/Exception/Expense/CfdiDocument/Rate/Invoice;
+Planned (not yet built): `app/Models` gains TrackingEvent/Position/CfdiDocument/Rate/Invoice;
 `app/Contracts` holds the provider interfaces (Pac, Telematics, Routing, Storage,
-Notifications, Billing); `app/Enums` gains the remaining status enums and compliance
-types; `routes/api.php` exposes the versioned API.
+Notifications, Billing); `app/Enums` gains the remaining compliance types;
+`routes/api.php` exposes the versioned API.
 
 Use `php artisan make:*` for new files, `--no-interaction`, and follow the sibling
 file's structure before writing a new one.
