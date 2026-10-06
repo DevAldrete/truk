@@ -782,6 +782,7 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 | Soft delete everywhere vs. fiscal immutability                                             | P6 (stamped docs must never vanish)   |
 | Offline photo/receipt upload is online-only (the JSON queue carries text, not files)        | P5 (private object storage + sync)    |
 | POD evidence is authorized per request, not a signed short-lived URL                        | P5 (temporary URLs)                   |
+| Service worker caches authenticated pages; clear the cache on logout                        | next auth/PWA hardening pass          |
 | Barcode/QR capture is manual code selection, no camera integration                           | a device scanner is requested         |
 | Trip status is not auto-derived from driver actions                                         | P5/P8                                 |
 
