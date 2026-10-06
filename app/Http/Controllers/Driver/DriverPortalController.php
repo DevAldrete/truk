@@ -23,6 +23,7 @@ use App\Models\Stop;
 use App\Models\Team;
 use App\Models\Trip;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,6 +40,8 @@ class DriverPortalController extends Controller
      */
     public function index(Request $request, Team $current_team): Response
     {
+        Gate::authorize('executeOperations', $current_team);
+
         $driver = $request->user()->driverProfileFor($current_team);
 
         $trips = Trip::query()

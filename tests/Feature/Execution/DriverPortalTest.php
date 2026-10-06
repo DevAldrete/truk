@@ -46,6 +46,16 @@ test('a planner sees every open trip', function () {
         ->assertInertia(fn (Assert $page) => $page->has('trips', 2)->where('driver', null));
 });
 
+test('a warehouse member cannot use the driver portal', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Warehouse->value]);
+
+    $this->actingAs($user)
+        ->get(route('driver.index', $team))
+        ->assertForbidden();
+});
+
 test('a driver cannot open another driver trip', function () {
     $team = Team::factory()->create();
     $driverUser = User::factory()->create();
