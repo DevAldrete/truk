@@ -2,6 +2,7 @@
 
 namespace App\Actions\Loads;
 
+use App\Actions\GenerateDocumentNumber;
 use App\Models\Load;
 use App\Models\Team;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SaveLoad
 {
+    public function __construct(private GenerateDocumentNumber $numbers) {}
+
     /**
      * Create a load.
      *
@@ -19,7 +22,7 @@ class SaveLoad
     public function create(Team $team, array $data): Load
     {
         return DB::transaction(fn (): Load => $team->loads()->create([
-            'number' => $this->nextNumber($team),
+            'number' => $this->numbers->handle($team, Load::withTrashed(), 'LOAD'),
             'status' => $data['status'],
             'notes' => $data['notes'] ?? null,
         ]));
@@ -38,15 +41,5 @@ class SaveLoad
         ]);
 
         return $load;
-    }
-
-    /**
-     * Build the next load number for the team.
-     */
-    protected function nextNumber(Team $team): string
-    {
-        $count = Load::withTrashed()->where('team_id', $team->id)->count();
-
-        return 'LOAD-'.str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
     }
 }

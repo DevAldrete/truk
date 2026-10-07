@@ -2,6 +2,7 @@
 
 namespace App\Actions\Trips;
 
+use App\Actions\GenerateDocumentNumber;
 use App\Models\Team;
 use App\Models\Trip;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SaveTrip
 {
+    public function __construct(private GenerateDocumentNumber $numbers) {}
+
     /**
      * Create a trip.
      *
@@ -19,7 +22,7 @@ class SaveTrip
     public function create(Team $team, array $data): Trip
     {
         return DB::transaction(fn (): Trip => $team->trips()->create([
-            'number' => $this->nextNumber($team),
+            'number' => $this->numbers->handle($team, Trip::withTrashed(), 'TRP'),
             ...$this->attributes($data),
         ]));
     }
@@ -51,15 +54,5 @@ class SaveTrip
             'timezone' => $data['timezone'] ?? null,
             'notes' => $data['notes'] ?? null,
         ];
-    }
-
-    /**
-     * Build the next trip number for the team.
-     */
-    protected function nextNumber(Team $team): string
-    {
-        $count = Trip::withTrashed()->where('team_id', $team->id)->count();
-
-        return 'TRP-'.str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
     }
 }

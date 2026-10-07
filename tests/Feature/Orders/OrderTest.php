@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Party;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
 test('the order book lists the orders of the current team', function () {
@@ -87,6 +88,31 @@ test('an order requires at least one item', function () {
         ->assertSessionHasErrors('items');
 
     $this->assertDatabaseCount('orders', 0);
+});
+
+test('a deleted middle order does not make the next number collide', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    Order::factory()->for($team)->create(['number' => 'ORD-00001']);
+    Order::factory()->for($team)->create(['number' => 'ORD-00002']);
+    Order::factory()->for($team)->create(['number' => 'ORD-00003']);
+
+    // A hard delete drops the row count but not the highest suffix; the next
+    // number must still be one past the highest, never a live number.
+    DB::table('orders')->where('number', 'ORD-00002')->delete();
+
+    $this->actingAs($user)->post(route('orders.store', $team), [
+        'status' => OrderStatus::Draft->value,
+        'currency' => 'MXN',
+        'items' => [['description' => 'Cajas', 'quantity' => 1, 'unit' => 'piece']],
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('orders', [
+        'team_id' => $team->id,
+        'number' => 'ORD-00004',
+    ]);
 });
 
 test('an order can only use a customer of the same team', function () {

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Actions\GenerateDocumentNumber;
 use App\Enums\ShipmentStatus;
 use App\Models\Location;
 use App\Models\Order;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ConvertOrderToShipment
 {
+    public function __construct(private GenerateDocumentNumber $numbers) {}
+
     /**
      * Create a shipment from the given order.
      *
@@ -31,7 +34,7 @@ class ConvertOrderToShipment
 
             $shipment = $team->shipments()->create([
                 'order_id' => $order->id,
-                'number' => $this->nextNumber($team),
+                'number' => $this->numbers->handle($team, Shipment::withTrashed(), 'SHP'),
                 'status' => ShipmentStatus::Planned,
                 'currency' => $order->currency,
                 'pickup_location_id' => $pickup?->id,
@@ -109,15 +112,5 @@ class ConvertOrderToShipment
             'latitude' => $location->latitude,
             'longitude' => $location->longitude,
         ];
-    }
-
-    /**
-     * Build the next shipment number for the team.
-     */
-    protected function nextNumber(Team $team): string
-    {
-        $count = Shipment::withTrashed()->where('team_id', $team->id)->count();
-
-        return 'SHP-'.str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
     }
 }

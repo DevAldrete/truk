@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Actions\GenerateDocumentNumber;
 use App\Models\Order;
 use App\Models\Party;
 use App\Models\Team;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SaveOrder
 {
+    public function __construct(private GenerateDocumentNumber $numbers) {}
+
     /**
      * Create an order with its items.
      *
@@ -28,7 +31,7 @@ class SaveOrder
 
             $order = $team->orders()->create([
                 ...$this->attributes($data, $customer),
-                'number' => $this->nextNumber($team),
+                'number' => $this->numbers->handle($team, Order::withTrashed(), 'ORD'),
             ]);
 
             $this->syncItems($team, $order, $data['items'] ?? []);
@@ -107,15 +110,5 @@ class SaveOrder
         return $customerId === null
             ? null
             : $team->parties()->find($customerId);
-    }
-
-    /**
-     * Build the next order number for the team.
-     */
-    protected function nextNumber(Team $team): string
-    {
-        $count = Order::withTrashed()->where('team_id', $team->id)->count();
-
-        return 'ORD-'.str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
     }
 }
