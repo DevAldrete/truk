@@ -4,10 +4,11 @@ Working document: where the project stands, what comes next, and the decisions t
 are already locked in. Read this before starting a session. `README.md` holds the
 product scope, `IDEA.md` the domain rules; this file holds the _execution_ state.
 
-Last updated after the P4.5 UX and input-hardening pass (uploads, validation
-feedback, package caps, document numbering, and in-app domain clarity), with the
-scope locked to a **full-lifecycle TMS**: fiscal compliance (SAT/CFDI/Carta Porte),
-billing/settlement, and route optimization are now in scope, not deferred.
+Last updated after the P4.5 UX and input-hardening pass and the roles/auth/execution
+follow-up (derived shipment status, organization-scoped username login, admin member
+management, driver confinement), with the scope locked to a **full-lifecycle TMS**:
+fiscal compliance (SAT/CFDI/Carta Porte), billing/settlement, and route optimization
+are now in scope, not deferred.
 
 ---
 
@@ -319,6 +320,29 @@ The product is no longer a lean dispatch tool. Locked in:
   → Load → Trip flow), a description under every list header, and a shared
   `ConfigurationField` that explains the SICT/NOM-012 code.
 - **Tests do not need a Vite build.** `tests/TestCase.php` calls `withoutVite()`.
+
+### 4.9 Computed in the roles/auth/execution follow-up
+
+- **Shipments are derived from the trip and the attempts, not hand-set.**
+  `DeriveShipmentStatus` reads the serving trips (through stops) for
+  `dispatched`/`in_transit` and the attempt lines for `delivered`/`partially_delivered`/
+  `failed`. `SyncTripShipments` re-derives them when a trip is dispatched, moves,
+  completes, or is cancelled. A trip cancelled after dispatch fails its shipments so
+  they return to the board to re-plan; one cancelled while still planned releases them
+  to the pool. The manual status editor is gone.
+- **Staff accounts use an organization-scoped username login.** `users.username`
+  (`{team-slug}/{handle}`, unique) and a nullable `users.email`; Fortify authenticates
+  by email or username through `Fortify::authenticateUsing`. Owners and admins create
+  an account with a name, username, temporary password, and role; the account is
+  attached to the team and treated as verified. Public registration still needs an
+  email.
+- **Admins manage members.** `Admin` gains `AddMember`/`UpdateMember`/`RemoveMember`.
+  The owner's role is immutable, self-demotion is refused, and the team always keeps at
+  least one owner or admin.
+- **Drivers are confined to the portal.** `RestrictDriverToPortal` redirects the
+  dashboard and blocks office routes for a user whose role is `driver`; the sidebar
+  hides office navigation and login lands a driver in the portal. Owners, admins, and
+  dispatchers keep full access.
 
 ---
 
@@ -843,6 +867,7 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 | Service worker caches authenticated pages; clear the cache on logout                        | next auth/PWA hardening pass          |
 | Barcode/QR capture is manual code selection, no camera integration                           | a device scanner is requested         |
 | Trip status is not auto-derived from driver actions                                         | P5/P8                                 |
+| Username-only accounts have no self-service password reset; the owner cannot reset a member password yet | when a user loses their password |
 
 ---
 
@@ -874,11 +899,13 @@ app/Actions/Orders|Shipments/         SaveOrder, ConvertOrderToShipment, StorePa
                                       DeriveShipmentStatus, DerivePackageStatus
 app/Actions/GenerateDocumentNumber.php highest-suffix, team-locked document numbering
 app/Actions/Trips/                    SaveTrip, AssignTripResources, ComputeTripCapacity, SaveStop,
-                                      ReorderStops, AssignShipmentToTrip, UnassignShipmentFromTrip
+                                      ReorderStops, AssignShipmentToTrip, UnassignShipmentFromTrip,
+                                      SyncTripShipments
 app/Actions/Execution/                RecordDeliveryAttempt, RecordScan, RecordProofOfDelivery,
                                       ReportIncident, UpdateIncidentStatus, RecordExpense,
                                       UpdateStopStatus
-app/Http/Middleware/                  EnsureTeamMembership (priority: before binding), SetLocale
+app/Http/Middleware/                  EnsureTeamMembership (priority: before binding), SetLocale,
+                                      RestrictDriverToPortal
 app/Policies/TeamPolicy.php           manageCatalog, manageOperations, executeOperations, overrideCapacity
 app/Rules/Rfc.php                     RFC shape (no check digit yet)
 config/filesystems.php                private `evidence` disk (serve disabled) for POD and receipts
