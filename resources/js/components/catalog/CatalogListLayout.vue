@@ -34,18 +34,22 @@ const onInput = (value: string | number) => {
         <header
             class="flex items-center justify-between gap-2 border-b px-4 py-3"
         >
-            <div>
-                <h1 class="text-sm font-semibold">{{ title }}</h1>
-                <p class="text-xs text-muted-foreground">{{ subtitle }}</p>
+            <div class="min-w-0 flex-1">
+                <h1 class="truncate text-sm font-semibold">{{ title }}</h1>
+                <p class="truncate text-xs text-muted-foreground">
+                    {{ subtitle }}
+                </p>
                 <p
                     v-if="description"
-                    class="mt-1 text-xs text-muted-foreground/80"
+                    class="mt-1 line-clamp-2 text-xs text-muted-foreground/80"
                 >
                     {{ description }}
                 </p>
             </div>
 
-            <slot name="actions" />
+            <div class="shrink-0">
+                <slot name="actions" />
+            </div>
         </header>
 
         <div class="space-y-2 border-b p-3">

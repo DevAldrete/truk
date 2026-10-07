@@ -748,7 +748,7 @@ const moveStop = (index: number, direction: number) => {
                                             String(value))
                                 "
                             >
-                                <SelectTrigger class="h-8 w-56">
+                                <SelectTrigger class="h-8 min-w-0 flex-1">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

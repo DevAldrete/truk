@@ -251,7 +251,7 @@ const totalVolumeM3 = computed(() => props.load.totals.volume_cm3 / 1000000);
                     class="mt-3 flex flex-wrap items-end gap-3 rounded-lg border p-3"
                     @submit.prevent="submitAttach"
                 >
-                    <div class="grid min-w-64 flex-1 gap-2">
+                    <div class="grid min-w-0 flex-1 gap-2">
                         <Label for="load-attach">
                             {{ $t('Add a shipment') }}
                         </Label>

@@ -145,13 +145,13 @@ onUnmounted(() => {
                 v-for="team in teams"
                 :key="team.id"
                 data-test="team-switcher-item"
-                :class="teamItemClass"
+                :class="[teamItemClass, 'min-w-0']"
                 @click="switchTeam(team)"
             >
-                {{ team.name }}
+                <span class="truncate">{{ team.name }}</span>
                 <Check
                     v-if="currentTeam?.id === team.id"
-                    :class="checkIconClass"
+                    :class="[checkIconClass, 'shrink-0']"
                 />
             </DropdownMenuItem>
             <DropdownMenuSeparator />

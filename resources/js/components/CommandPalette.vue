@@ -321,10 +321,12 @@ onUnmounted(() => {
                     @click="go(item)"
                 >
                     <component :is="item.icon" class="size-4 opacity-60" />
-                    <span class="flex-1 truncate">{{ item.label }}</span>
+                    <span class="min-w-0 flex-1 truncate">{{
+                        item.label
+                    }}</span>
                     <span
                         v-if="item.hint"
-                        class="truncate text-xs text-muted-foreground"
+                        class="max-w-[45%] shrink-0 truncate text-xs text-muted-foreground"
                     >
                         {{ item.hint }}
                     </span>
