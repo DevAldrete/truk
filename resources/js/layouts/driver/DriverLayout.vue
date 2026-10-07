@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, Truck } from '@lucide/vue';
+import { ArrowLeft, LayoutGrid, Truck } from '@lucide/vue';
 import { computed, onMounted } from 'vue';
 import OfflineBadge from '@/components/driver/OfflineBadge.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { useOfflineQueue } from '@/composables/useOfflineQueue';
 import { t } from '@/lib/i18n';
+import { dashboard } from '@/routes';
 import { index as driverIndex } from '@/routes/driver';
 
 const page = usePage();
@@ -14,6 +15,9 @@ const { flush } = useOfflineQueue();
 const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
 const homeUrl = computed(() =>
     driverIndex.url({ current_team: teamSlug.value }),
+);
+const dashboardUrl = computed(() =>
+    teamSlug.value === '' ? '/' : dashboard(teamSlug.value).url,
 );
 
 onMounted(() => {
@@ -42,6 +46,16 @@ onMounted(() => {
             </div>
 
             <OfflineBadge />
+
+            <Link
+                :href="dashboardUrl"
+                class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                data-test="exit-driver-portal"
+            >
+                <LayoutGrid class="size-4" />
+                <span class="hidden sm:inline">{{ $t('Back to app') }}</span>
+                <span class="sr-only sm:hidden">{{ $t('Back to app') }}</span>
+            </Link>
         </header>
 
         <main class="mx-auto w-full max-w-2xl flex-1 px-4 py-4 pb-24">
