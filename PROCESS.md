@@ -4,10 +4,10 @@ Working document: where the project stands, what comes next, and the decisions t
 are already locked in. Read this before starting a session. `README.md` holds the
 product scope, `IDEA.md` the domain rules; this file holds the _execution_ state.
 
-Last updated after the P4 milestone (driver execution and the offline-first PWA),
-with the scope locked to a **full-lifecycle TMS**: fiscal compliance (SAT/CFDI/
-Carta Porte), billing/settlement, and route optimization are now in scope, not
-deferred.
+Last updated after the P4.5 UX and input-hardening pass (uploads, validation
+feedback, package caps, document numbering, and in-app domain clarity), with the
+scope locked to a **full-lifecycle TMS**: fiscal compliance (SAT/CFDI/Carta Porte),
+billing/settlement, and route optimization are now in scope, not deferred.
 
 ---
 
@@ -103,6 +103,7 @@ The test suite is unaffected: `phpunit.xml` forces `DB_CONNECTION=sqlite` and
 | **P2**   | Order intake: orders → shipments/items/packages + location geodata. Rate cards & quotes pending   | 🚧 In progress |
 | **P3**   | Planning & dispatch: loads, trips, stops, capacity, dispatch board                              | ✅ Done    |
 | **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ✅ Done    |
+| **P4.5** | UX & input hardening: uploads, validation feedback, package caps, numbering, domain clarity      | ✅ Done    |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
 | **P7**   | Pricing & billing: rate engine, accessorials, fuel surcharge, 3-way match, invoicing, settlement | ⬜         |
@@ -294,6 +295,30 @@ The product is no longer a lean dispatch tool. Locked in:
   table and silently drops raw partial indexes (the `WHERE deleted_at IS NULL`
   predicate). Recreate the table from scratch when a partial index and a new FK must
   coexist.
+
+### 4.8 Computed in P4.5 (UX and input hardening)
+
+- **Upload limits are the smaller of config and PHP.** `config/uploads.php` caps the
+  per-file rule at `min(UPLOAD_MAX_KILOBYTES, upload_max_filesize, post_max_size)`, so
+  an oversized file is a normal validation error instead of a body-less 413. A body
+  over `post_max_size` is caught in `bootstrap/app.php` and returned as a plain 413;
+  the client error handler translates it. Evidence is validated and compressed
+  client-side before upload, and the POD signature has a decoded byte cap.
+- **Validation errors are always visible.** `lib/errorFeedback.ts` shows a toast and
+  scrolls the first `[data-field-error]` into view; `InputError` is `v-if` and carries
+  that attribute. `lang/{es,en}/validation.php` name every domain field, including
+  nested line items.
+- **Packages are bounded.** `config/shipments.php` sets the per-request and
+  per-shipment ceilings; `StorePackageRequest::after()` enforces the cumulative limit
+  and `StorePackages` bulk-inserts.
+- **Document numbers read the highest suffix**, not a row count, and lock the team row
+  (`GenerateDocumentNumber`), so a hard delete or a concurrent create cannot collide.
+- **The driver portal is not a dead end.** `DriverLayout` links back to the team
+  dashboard.
+- **Domain terms are explained in the app.** A Help page (glossary + Order → Shipment
+  → Load → Trip flow), a description under every list header, and a shared
+  `ConfigurationField` that explains the SICT/NOM-012 code.
+- **Tests do not need a Vite build.** `tests/TestCase.php` calls `withoutVite()`.
 
 ---
 
@@ -741,7 +766,7 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
     import json, re, pathlib
     d = json.load(open('lang/es.json'))
     used = {}
-    for p in pathlib.Path('resources/js').rglob('*.vue'):
+    for p in list(pathlib.Path('resources/js').rglob('*.vue')) + list(pathlib.Path('resources/js').rglob('*.ts')):
         for m in re.finditer(r'(?:\$t|(?<![\w$])t)\(\s*([\'"])((?:\\\1|(?!\1).)*)\1', p.read_text(), re.S):
             used.setdefault(m.group(2).replace("\\'", "'"), set())
     php = ''.join(p.read_text() for p in pathlib.Path('app').rglob('*.php'))
@@ -806,11 +831,11 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 | `NavFooter.vue` is unused after the starter-kit links were removed                          | delete with the next nav change       |
 | No "restore" action for soft-deleted records                                                | a user asks for a deleted record back |
 | State/postal code are free text                                                             | SEPOMEX address catalog (P2/P9)       |
-| Full Spanish `validation.php` covers common rules only; anything else falls back to English | a missing message is reported         |
+| Full Spanish `validation.php` covers common rules only; every field now has an `attributes` label but uncommon rules still fall back to English | a missing message is reported |
 | Contact "primary" flag, party multi-type                                                    | a workflow demands it                 |
 | Compliance document files                                                                   | P5 (private storage + signed URLs)    |
 | `ManageCatalog` is coarse                                                                   | see §11.4                             |
-| `⌘K` has no visible affordance in the header                                                | first UX polish pass                  |
+| `⌘K` has no visible affordance in the header                                                | next UX polish pass                   |
 | Load/Trip feasibility is unmodelled (no drive-time estimate)                                | P8 (optimization)                     |
 | Soft delete everywhere vs. fiscal immutability                                             | P6 (stamped docs must never vanish)   |
 | Offline photo/receipt upload is online-only (the JSON queue carries text, not files)        | P5 (private object storage + sync)    |
@@ -847,6 +872,7 @@ app/Http/Controllers/Driver/          DriverPortalController, DeliveryAttemptCon
 app/Http/Controllers/Incidents/       IncidentController (planner resolution)
 app/Actions/Orders|Shipments/         SaveOrder, ConvertOrderToShipment, StorePackages,
                                       DeriveShipmentStatus, DerivePackageStatus
+app/Actions/GenerateDocumentNumber.php highest-suffix, team-locked document numbering
 app/Actions/Trips/                    SaveTrip, AssignTripResources, ComputeTripCapacity, SaveStop,
                                       ReorderStops, AssignShipmentToTrip, UnassignShipmentFromTrip
 app/Actions/Execution/                RecordDeliveryAttempt, RecordScan, RecordProofOfDelivery,
@@ -856,21 +882,25 @@ app/Http/Middleware/                  EnsureTeamMembership (priority: before bin
 app/Policies/TeamPolicy.php           manageCatalog, manageOperations, executeOperations, overrideCapacity
 app/Rules/Rfc.php                     RFC shape (no check digit yet)
 config/filesystems.php                private `evidence` disk (serve disabled) for POD and receipts
+config/uploads.php                    effective evidence size limit (min of config and PHP)
+config/shipments.php                  per-request and per-shipment package ceilings
 lang/es.json                          the interface dictionary (English key → Spanish)
 lang/{es,en}/                         roles, party_types, compliance_document_types, order/shipment/load/
                                       trip/stop/package statuses, delivery/scan/incident/expense types
 resources/js/lib/i18n.ts              t() and the global $t
+resources/js/lib/errorFeedback.ts     global toast + scroll for network/HTTP/validation failures
+resources/js/lib/evidence.ts          client-side evidence type/size checks and image compression
 resources/js/composables/useFilteredList.ts   URL-backed, debounced list filtering
 resources/js/composables/useOfflineQueue.ts   offline driver command queue (idempotent replay)
 resources/js/composables/useOnlineStatus.ts   connectivity tracking
 resources/js/components/CommandPalette.vue    ⌘K: nav commands + server search
-resources/js/components/catalog/      CatalogListLayout, party/location/fleet/order/shipment/load/trip
-                                      detail + form sheets, CapacityGauge, DispatchTripCard
+resources/js/components/catalog/      CatalogListLayout, ConfigurationField, party/location/fleet/order/
+                                      shipment/load/trip detail + form sheets, CapacityGauge, DispatchTripCard
 resources/js/components/driver/       StopExecutionCard + StopStatusButtons + attempt/scan/POD/incident/
                                       expense sheets + OfflineBadge
 resources/js/layouts/driver/          DriverLayout (mobile-first portal shell)
 resources/js/pages/                   parties/, locations/, fleet/, orders/, shipments/, loads/, trips/,
-                                      dispatch/, driver/
+                                      dispatch/, driver/, Help.vue (glossary + flow)
 public/sw.js, public/manifest.webmanifest      offline-first PWA shell
 tests/Feature/Tenancy/                trait behaviour + the model convention test
 tests/Feature/Fleet/                  drivers, vehicles, trailers, compliance documents
