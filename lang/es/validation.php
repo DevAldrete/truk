@@ -126,15 +126,27 @@ return [
     'custom' => [],
 
     'attributes' => [
-        'email' => 'correo electrónico',
+        // Shared
         'name' => 'nombre',
+        'type' => 'tipo',
+        'status' => 'estado',
+        'notes' => 'notas',
+        'currency' => 'moneda',
+        'description' => 'descripción',
+        'number' => 'número',
+        'role' => 'rol',
+        'email' => 'correo electrónico',
+        'phone' => 'teléfono',
         'password' => 'contraseña',
         'password_confirmation' => 'confirmación de contraseña',
         'current_password' => 'contraseña actual',
-        'role' => 'rol',
+
+        // Parties
         'legal_name' => 'razón social',
         'rfc' => 'RFC',
         'position' => 'puesto',
+
+        // Locations
         'party_id' => 'tercero',
         'street' => 'calle',
         'exterior_number' => 'número exterior',
@@ -144,6 +156,88 @@ return [
         'state' => 'estado',
         'postal_code' => 'código postal',
         'references' => 'referencias',
+        'latitude' => 'latitud',
+        'longitude' => 'longitud',
+        'timezone' => 'zona horaria',
+
+        // Fleet and compliance
+        'carrier_party_id' => 'transportista',
+        'plate' => 'placa',
+        'configuration' => 'configuración',
+        'max_payload_kg' => 'capacidad de carga (kg)',
+        'max_volume_m3' => 'volumen (m³)',
+        'license_number' => 'número de licencia',
+        'license_expires_at' => 'vencimiento de la licencia',
+        'user_id' => 'conductor',
+        'issued_at' => 'fecha de expedición',
+        'expires_at' => 'fecha de vencimiento',
+
+        // Orders
+        'customer_party_id' => 'cliente',
+        'requested_pickup_at' => 'fecha de recolección solicitada',
+        'requested_delivery_at' => 'fecha de entrega solicitada',
+        'items' => 'mercancía',
+        'items.*.description' => 'descripción',
+        'items.*.quantity' => 'cantidad',
+        'items.*.unit' => 'unidad',
+        'items.*.weight_kg' => 'peso (kg)',
+        'items.*.volume_m3' => 'volumen (m³)',
+        'items.*.hazmat' => 'material peligroso',
+
+        // Shipments and packages
+        'pickup_location_id' => 'sitio de recolección',
+        'delivery_location_id' => 'sitio de entrega',
+        'package_count' => 'cantidad de paquetes',
+        'count' => 'cantidad',
+        'weight_kg' => 'peso (kg)',
+        'shipment_id' => 'embarque',
+        'package_id' => 'paquete',
+        'code' => 'código',
+
+        // Planning
+        'load_id' => 'carga',
+        'planned_start_at' => 'inicio planeado',
+        'planned_end_at' => 'fin planeado',
+        'planned_at' => 'fecha planeada',
+        'location_id' => 'ubicación',
+        'sequence' => 'secuencia',
+        'driver_id' => 'conductor',
+        'vehicle_id' => 'unidad',
+        'trailer_id' => 'remolque',
+        'capacity_override_reason' => 'motivo de la autorización',
+
+        // Execution
+        'outcome' => 'resultado',
+        'failure_reason' => 'motivo del fallo',
+        'recipient_name' => 'nombre de quien recibe',
+        'signature' => 'firma',
+        'photos' => 'fotos',
+        'photos.*' => 'foto',
+        'documents' => 'documentos',
+        'documents.*' => 'documento',
+        'consent' => 'consentimiento',
+        'captured_at' => 'fecha de captura',
+        'idempotency_key' => 'clave de idempotencia',
+        'occurred_at' => 'fecha de ocurrencia',
+        'severity' => 'severidad',
+        'resolution' => 'resolución',
+        'lines' => 'líneas',
+        'lines.*.shipment_id' => 'embarque',
+        'lines.*.shipment_item_id' => 'partida',
+        'lines.*.quantity' => 'cantidad',
+        'lines.*.success' => 'resultado',
+        'lines.*.discrepancy_reason' => 'motivo de la discrepancia',
+        'lines.*.notes' => 'notas',
+        'stop_id' => 'parada',
+
+        // Expenses
+        'amount' => 'monto',
+        'liters' => 'litros',
+        'price_per_liter' => 'precio por litro',
+        'odometer_km' => 'odómetro (km)',
+        'tank' => 'tanque',
+        'vendor' => 'proveedor',
+        'receipt' => 'comprobante',
     ],
 
 ];

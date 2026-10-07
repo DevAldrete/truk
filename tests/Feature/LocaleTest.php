@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\Locale;
+use App\Enums\TeamRole;
+use App\Models\Team;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -98,4 +100,22 @@ test('validation messages are returned in the active locale', function () {
         'name' => 'El campo nombre es obligatorio.',
         'email' => 'El campo correo electrónico debe ser un correo electrónico válido.',
     ]);
+});
+
+test('domain validation messages name the field in Spanish', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    $this->actingAs($user)
+        ->withHeader('Accept-Language', 'es-MX,es;q=0.9')
+        ->from(route('vehicles.index', $team))
+        ->post(route('vehicles.store', $team), [
+            'name' => 'Unidad 1',
+            'plate' => 'ABC1234',
+            'max_payload_kg' => 10,
+        ])
+        ->assertSessionHasErrors([
+            'configuration' => 'El campo configuración es obligatorio.',
+        ]);
 });

@@ -156,7 +156,6 @@ const submit = () => {
             form.reset();
             clientReceiptError.value = undefined;
         },
-        onError: () => toast.error(t('Please fix the highlighted fields.')),
     });
 };
 </script>

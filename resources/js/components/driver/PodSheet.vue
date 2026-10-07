@@ -213,7 +213,6 @@ const submit = () => {
             photos.value = [];
             clientPhotoErrors.value = [];
         },
-        onError: () => toast.error(t('Please fix the highlighted fields.')),
     });
 };
 </script>
