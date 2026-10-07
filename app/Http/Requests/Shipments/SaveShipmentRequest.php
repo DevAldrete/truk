@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Shipments;
 
-use App\Enums\ShipmentStatus;
 use App\Models\Shipment;
 use App\Models\Team;
 use Illuminate\Foundation\Http\FormRequest;
@@ -40,7 +39,6 @@ class SaveShipmentRequest extends FormRequest
                 'integer',
                 Rule::exists('locations', 'id')->where('team_id', $this->team()->id),
             ],
-            'status' => ['nullable', Rule::enum(ShipmentStatus::class)],
         ];
     }
 

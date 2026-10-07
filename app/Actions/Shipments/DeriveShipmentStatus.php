@@ -4,16 +4,21 @@ namespace App\Actions\Shipments;
 
 use App\Enums\DeliveryOutcome;
 use App\Enums\ShipmentStatus;
+use App\Enums\TripStatus;
 use App\Models\DeliveryAttempt;
 use App\Models\Shipment;
+use App\Models\Trip;
+use Illuminate\Support\Collection;
 
 /**
- * Derives a shipment's delivery status from the successful lines of its
- * delivery attempts.
+ * Derives a shipment's status from what actually happened to it.
  *
- * This is the single place a shipment becomes delivered or partially delivered.
- * It is idempotent: recomputing from the recorded lines yields the same status,
- * and a shipment is never marked delivered merely because a stop completed.
+ * Delivery is derived from the successful lines of its delivery attempts; the
+ * road state (dispatched / in transit) is derived from the trips that serve it
+ * through stops. This is the single place a shipment's status is written.
+ *
+ * It is idempotent: recomputing yields the same status, and a shipment is never
+ * marked delivered merely because a stop or trip completed.
  */
 class DeriveShipmentStatus
 {
@@ -31,7 +36,7 @@ class DeriveShipmentStatus
         $status = match (true) {
             $delivered > 0 && $planned > 0 && $delivered < $planned => ShipmentStatus::PartiallyDelivered,
             $delivered > 0 => ShipmentStatus::Delivered,
-            default => $this->unsuccessfulStatus($shipment),
+            default => $this->undeliveredStatus($shipment),
         };
 
         if ($status !== $shipment->status) {
@@ -44,7 +49,42 @@ class DeriveShipmentStatus
     /**
      * Get the status of a shipment with no delivered quantity.
      */
-    protected function unsuccessfulStatus(Shipment $shipment): ShipmentStatus
+    protected function undeliveredStatus(Shipment $shipment): ShipmentStatus
+    {
+        if ($this->lastAttemptFailed($shipment)) {
+            return ShipmentStatus::Failed;
+        }
+
+        $trips = $this->servingTrips($shipment);
+
+        if ($trips->contains(fn (Trip $trip): bool => $trip->status === TripStatus::InTransit)) {
+            return ShipmentStatus::InTransit;
+        }
+
+        if ($trips->contains(fn (Trip $trip): bool => $trip->status === TripStatus::Dispatched)) {
+            return ShipmentStatus::Dispatched;
+        }
+
+        if ($trips->contains(fn (Trip $trip): bool => $trip->status === TripStatus::Planned)) {
+            return ShipmentStatus::Planned;
+        }
+
+        // Only cancelled trips (or none) remain. A shipment that had left the
+        // yard is a failure to re-plan; one that never left returns to the pool.
+        if (
+            $trips->isNotEmpty()
+            && in_array($shipment->status, [ShipmentStatus::Dispatched, ShipmentStatus::InTransit], true)
+        ) {
+            return ShipmentStatus::Failed;
+        }
+
+        return ShipmentStatus::Planned;
+    }
+
+    /**
+     * Determine whether the shipment's most recent attempt failed or returned.
+     */
+    protected function lastAttemptFailed(Shipment $shipment): bool
     {
         $latest = DeliveryAttempt::query()
             ->where(fn ($query) => $query
@@ -54,9 +94,18 @@ class DeriveShipmentStatus
             ->latest('id')
             ->first();
 
-        return match ($latest?->outcome) {
-            DeliveryOutcome::Failed, DeliveryOutcome::Returned => ShipmentStatus::Failed,
-            default => $shipment->status,
-        };
+        return in_array($latest?->outcome, [DeliveryOutcome::Failed, DeliveryOutcome::Returned], true);
+    }
+
+    /**
+     * Get the trips that serve the shipment through their stops.
+     *
+     * @return Collection<int, Trip>
+     */
+    protected function servingTrips(Shipment $shipment): Collection
+    {
+        return Trip::query()
+            ->whereHas('stops.shipments', fn ($query) => $query->whereKey($shipment->id))
+            ->get();
     }
 }

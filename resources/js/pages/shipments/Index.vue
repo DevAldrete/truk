@@ -140,7 +140,6 @@ const status = ref(props.filters.status ?? 'all');
                 :shipment="shipment"
                 :team-slug="teamSlug"
                 :locations="locations"
-                :statuses="statuses"
                 :can-manage="can.manage"
             />
 

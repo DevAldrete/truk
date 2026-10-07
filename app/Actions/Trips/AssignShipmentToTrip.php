@@ -2,6 +2,7 @@
 
 namespace App\Actions\Trips;
 
+use App\Actions\Shipments\DeriveShipmentStatus;
 use App\Enums\StopStatus;
 use App\Enums\StopType;
 use App\Models\Shipment;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  */
 class AssignShipmentToTrip
 {
+    public function __construct(private DeriveShipmentStatus $deriveStatus) {}
+
     /**
      * Attach the shipment to the trip, idempotently.
      */
@@ -38,6 +41,8 @@ class AssignShipmentToTrip
                 'stop_id' => $stop->id,
                 'shipment_id' => $shipment->id,
             ]);
+
+            $this->deriveStatus->handle($shipment);
         });
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Trips;
 
+use App\Actions\Shipments\DeriveShipmentStatus;
 use App\Models\Shipment;
 use App\Models\StopShipment;
 use App\Models\Trip;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
  */
 class UnassignShipmentFromTrip
 {
+    public function __construct(private DeriveShipmentStatus $deriveStatus) {}
+
     /**
      * Detach the shipment from the trip's stops.
      */
@@ -24,6 +27,8 @@ class UnassignShipmentFromTrip
                 ->whereIn('stop_id', $stopIds)
                 ->where('shipment_id', $shipment->id)
                 ->delete();
+
+            $this->deriveStatus->handle($shipment);
         });
     }
 }

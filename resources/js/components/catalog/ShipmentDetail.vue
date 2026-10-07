@@ -26,7 +26,6 @@ const props = defineProps<{
     shipment: ShipmentDetail;
     teamSlug: string;
     locations: Option[];
-    statuses: Option[];
     canManage: boolean;
 }>();
 
@@ -37,7 +36,6 @@ const form = useForm({
     delivery_location_id: props.shipment.delivery_location_id
         ? String(props.shipment.delivery_location_id)
         : 'none',
-    status: props.shipment.status,
 });
 
 const save = () => {
@@ -199,25 +197,6 @@ const remainingPackages = computed(() =>
                         </SelectContent>
                     </Select>
                     <InputError :message="form.errors.delivery_location_id" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="shipment-status">{{ $t('Status') }}</Label>
-                    <Select v-model="form.status" :disabled="!canManage">
-                        <SelectTrigger id="shipment-status" class="w-full">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem
-                                v-for="item in statuses"
-                                :key="item.value"
-                                :value="item.value"
-                            >
-                                {{ item.label }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.status" />
                 </div>
 
                 <div

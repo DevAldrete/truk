@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Trips;
 
 use App\Actions\Trips\ComputeTripCapacity;
+use App\Actions\Trips\SyncTripShipments;
 use App\Enums\TeamPermission;
 use App\Enums\TripStatus;
 use App\Http\Controllers\Controller;
@@ -24,6 +25,7 @@ class TripDispatchController extends Controller
         Team $current_team,
         Trip $trip,
         ComputeTripCapacity $capacity,
+        SyncTripShipments $syncShipments,
     ): RedirectResponse {
         Gate::authorize('manageOperations', $current_team);
 
@@ -58,6 +60,8 @@ class TripDispatchController extends Controller
         }
 
         $trip->forceFill($attributes)->save();
+
+        $syncShipments->handle($trip);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name was updated.', ['name' => $trip->number])]);
 

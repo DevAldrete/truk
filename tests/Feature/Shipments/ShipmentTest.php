@@ -25,37 +25,6 @@ test('the shipment board lists the shipments of the current team', function () {
             ->where('shipments.data.0.number', 'SHP-00001'));
 });
 
-test('a shipment status can move along an allowed transition', function () {
-    $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $team->members()->attach($user, ['role' => TeamRole::Dispatcher->value]);
-    $shipment = Shipment::factory()->for($team)->create(['status' => ShipmentStatus::Planned]);
-
-    $this->actingAs($user)
-        ->patch(route('shipments.update', [$team, $shipment]), [
-            'status' => ShipmentStatus::Dispatched->value,
-        ])
-        ->assertRedirect();
-
-    expect($shipment->fresh()->status)->toBe(ShipmentStatus::Dispatched);
-});
-
-test('an invalid shipment transition is rejected', function () {
-    $user = User::factory()->create();
-    $team = Team::factory()->create();
-    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
-    $shipment = Shipment::factory()->for($team)->create(['status' => ShipmentStatus::Planned]);
-
-    $this->actingAs($user)
-        ->from(route('shipments.show', [$team, $shipment]))
-        ->patch(route('shipments.update', [$team, $shipment]), [
-            'status' => ShipmentStatus::Delivered->value,
-        ])
-        ->assertSessionHasErrors('status');
-
-    expect($shipment->fresh()->status)->toBe(ShipmentStatus::Planned);
-});
-
 test('changing the delivery site refreshes the address snapshot', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();

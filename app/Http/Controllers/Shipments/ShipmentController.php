@@ -14,7 +14,6 @@ use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,18 +58,6 @@ class ShipmentController extends Controller
             $delivery = $this->location($current_team, $data['delivery_location_id']);
             $attributes['delivery_location_id'] = $delivery?->id;
             $attributes['delivery_snapshot'] = $this->snapshot($delivery);
-        }
-
-        if (! empty($data['status']) && $data['status'] !== $shipment->status->value) {
-            $target = ShipmentStatus::from($data['status']);
-
-            if (! $shipment->status->canTransitionTo($target)) {
-                throw ValidationException::withMessages([
-                    'status' => __('That status change is not allowed.'),
-                ]);
-            }
-
-            $attributes['status'] = $target->value;
         }
 
         $shipment->update($attributes);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Trips;
 
 use App\Actions\Trips\ComputeTripCapacity;
 use App\Actions\Trips\SaveTrip;
+use App\Actions\Trips\SyncTripShipments;
 use App\Enums\StopStatus;
 use App\Enums\StopType;
 use App\Enums\TeamPermission;
@@ -63,13 +64,14 @@ class TripController extends Controller
     /**
      * Update the given trip.
      */
-    public function update(SaveTripRequest $request, Team $current_team, Trip $trip, SaveTrip $saveTrip, ComputeTripCapacity $capacity): RedirectResponse
+    public function update(SaveTripRequest $request, Team $current_team, Trip $trip, SaveTrip $saveTrip, ComputeTripCapacity $capacity, SyncTripShipments $syncShipments): RedirectResponse
     {
         Gate::authorize('manageOperations', $current_team);
 
         $data = $request->validated();
+        $statusChanged = $data['status'] !== $trip->status->value;
 
-        if ($data['status'] !== $trip->status->value) {
+        if ($statusChanged) {
             $target = TripStatus::from($data['status']);
 
             if (! $trip->status->canTransitionTo($target)) {
@@ -84,6 +86,10 @@ class TripController extends Controller
         }
 
         $saveTrip->update($trip, $data);
+
+        if ($statusChanged) {
+            $syncShipments->handle($trip);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name was updated.', ['name' => $trip->number])]);
 
