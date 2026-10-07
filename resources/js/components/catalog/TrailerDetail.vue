@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
+import ConfigurationField from '@/components/catalog/ConfigurationField.vue';
 import ComplianceDocsSection from '@/components/catalog/ComplianceDocsSection.vue';
 import DeleteButton from '@/components/catalog/DeleteButton.vue';
 import { Button } from '@/components/ui/button';
@@ -123,15 +124,12 @@ const save = () => {
                 </div>
 
                 <div class="grid gap-2 sm:col-span-3">
-                    <Label for="trailer-configuration">
-                        {{ $t('Configuration') }}
-                    </Label>
-                    <Input
+                    <ConfigurationField
                         id="trailer-configuration"
                         v-model="form.configuration"
+                        :error="form.errors.configuration"
                         :disabled="!canManage"
                     />
-                    <InputError :message="form.errors.configuration" />
                 </div>
 
                 <div class="grid gap-2 sm:col-span-3">

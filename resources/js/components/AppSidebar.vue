@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    BookOpen,
     Building2,
     ClipboardList,
     Container,
@@ -39,7 +40,7 @@ import { index as shipmentsIndex } from '@/routes/shipments';
 import { index as trailersIndex } from '@/routes/trailers';
 import { index as tripsIndex } from '@/routes/trips';
 import { index as vehiclesIndex } from '@/routes/vehicles';
-import { dashboard, dispatch } from '@/routes';
+import { dashboard, dispatch, help } from '@/routes';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -115,6 +116,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: t('Trips'),
         href: tripsIndex.url({ current_team: teamSlug.value }),
         icon: Route,
+    },
+    {
+        title: t('Help'),
+        href: help.url({ current_team: teamSlug.value }),
+        icon: BookOpen,
     },
 ]);
 

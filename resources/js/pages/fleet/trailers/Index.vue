@@ -45,6 +45,7 @@ const term = ref(props.filters.search ?? '');
             v-model="term"
             :title="$t('Trailers')"
             :subtitle="$t(':count trailers', { count: trailers.total })"
+            :description="$t('The trailers attached to your vehicles.')"
             :paginator="trailers"
             :placeholder="$t('Search by name, plate, or type')"
             search-test="trailer-search"

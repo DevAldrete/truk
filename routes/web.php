@@ -51,6 +51,8 @@ Route::prefix('{current_team}')
 
         Route::get('search', SearchController::class)->name('search');
 
+        Route::inertia('help', 'Help')->name('help');
+
         Route::get('parties', [PartyController::class, 'index'])->name('parties.index');
         Route::post('parties', [PartyController::class, 'store'])->name('parties.store');
         Route::get('parties/{party}', [PartyController::class, 'show'])->name('parties.show');

@@ -171,7 +171,11 @@ const submit = () => {
 
                 <div class="grid gap-2 sm:col-span-1">
                     <Label for="new-location-zip">{{ $t('Zip') }}</Label>
-                    <Input id="new-location-zip" v-model="form.postal_code" />
+                    <Input
+                        id="new-location-zip"
+                        v-model="form.postal_code"
+                        placeholder="00000"
+                    />
                     <InputError :message="form.errors.postal_code" />
                 </div>
 

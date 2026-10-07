@@ -98,6 +98,7 @@ const submit = () => {
                         id="driver-license-number"
                         v-model="form.license_number"
                         class="uppercase"
+                        placeholder="1234567"
                     />
                     <InputError :message="form.errors.license_number" />
                 </div>

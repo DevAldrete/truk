@@ -112,6 +112,7 @@ const submit = () => {
                         v-model="form.rfc"
                         class="uppercase"
                         maxlength="13"
+                        placeholder="XAXX010101000"
                     />
                     <InputError :message="form.errors.rfc" />
                 </div>

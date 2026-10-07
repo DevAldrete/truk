@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import {
+    BookOpen,
     Building2,
     ClipboardList,
     Layers,
@@ -23,7 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
-import { dashboard, dispatch, search as searchRoute } from '@/routes';
+import { dashboard, dispatch, help, search as searchRoute } from '@/routes';
 import { index as driversIndex } from '@/routes/drivers';
 import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
@@ -112,6 +113,12 @@ const commands = computed<Item[]>(() => [
         label: t('Vehicles'),
         icon: Truck,
         url: vehiclesIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'help',
+        label: t('Help'),
+        icon: BookOpen,
+        url: help.url({ current_team: props.teamSlug }),
     },
     {
         key: 'settings',

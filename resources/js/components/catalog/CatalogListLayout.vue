@@ -8,6 +8,7 @@ import type { Paginated } from '@/types';
 defineProps<{
     title: string;
     subtitle: string;
+    description?: string;
     paginator: Paginated<unknown>;
     modelValue: string;
     placeholder: string;
@@ -36,6 +37,12 @@ const onInput = (value: string | number) => {
             <div>
                 <h1 class="text-sm font-semibold">{{ title }}</h1>
                 <p class="text-xs text-muted-foreground">{{ subtitle }}</p>
+                <p
+                    v-if="description"
+                    class="mt-1 text-xs text-muted-foreground/80"
+                >
+                    {{ description }}
+                </p>
             </div>
 
             <slot name="actions" />

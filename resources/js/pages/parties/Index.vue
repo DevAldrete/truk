@@ -50,6 +50,9 @@ const term = ref(props.filters.search ?? '');
             v-model="term"
             :title="$t('Parties')"
             :subtitle="$t(':count records', { count: parties.total })"
+            :description="
+                $t('Customers, carriers, and suppliers you work with.')
+            "
             :paginator="parties"
             :placeholder="$t('Search by name or RFC')"
             search-test="party-search"

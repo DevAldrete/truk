@@ -47,6 +47,7 @@ const term = ref(props.filters.search ?? '');
             v-model="term"
             :title="$t('Locations')"
             :subtitle="$t(':count sites', { count: locations.total })"
+            :description="$t('Pickup, delivery, and warehouse addresses.')"
             :paginator="locations"
             :placeholder="$t('Search by name, city, or zip')"
             search-test="location-search"

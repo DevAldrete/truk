@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
+import ConfigurationField from '@/components/catalog/ConfigurationField.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,20 +90,16 @@ const submit = () => {
                         id="trailer-plate"
                         v-model="form.plate"
                         class="uppercase"
+                        placeholder="ABC-12-34"
                     />
                     <InputError :message="form.errors.plate" />
                 </div>
 
-                <div class="grid gap-2">
-                    <Label for="trailer-configuration">
-                        {{ $t('Configuration') }}
-                    </Label>
-                    <Input
-                        id="trailer-configuration"
-                        v-model="form.configuration"
-                    />
-                    <InputError :message="form.errors.configuration" />
-                </div>
+                <ConfigurationField
+                    id="trailer-configuration"
+                    v-model="form.configuration"
+                    :error="form.errors.configuration"
+                />
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="grid gap-2">

@@ -64,6 +64,9 @@ const status = ref(props.filters.status ?? 'all');
             v-model="term"
             :title="$t('Trips')"
             :subtitle="$t(':count records', { count: trips.total })"
+            :description="
+                $t('Planned executions with assigned vehicles and drivers.')
+            "
             :paginator="trips"
             :placeholder="$t('Search by number')"
             search-test="trip-search"
