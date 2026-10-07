@@ -86,7 +86,7 @@ class RecordExpenseRequest extends FormRequest
             'odometer_km' => ['nullable', 'numeric', 'min:0'],
             'odometer_meters' => ['nullable', 'integer', 'min:0'],
             'tank' => ['nullable', 'string', 'max:40'],
-            'receipt' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'receipt' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:'.config('uploads.max_kilobytes')],
             'idempotency_key' => ['required', 'uuid'],
         ];
     }

@@ -8,6 +8,7 @@ use App\Models\Trip;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Records an operational expense on a trip.
@@ -63,6 +64,14 @@ class RecordExpense
             return null;
         }
 
-        return (string) $receipt->store('teams/'.$team->id.'/expenses', 'evidence');
+        $path = $receipt->store('teams/'.$team->id.'/expenses', 'evidence');
+
+        if ($path === false) {
+            throw ValidationException::withMessages([
+                'receipt' => __('The file could not be stored. Please try again.'),
+            ]);
+        }
+
+        return (string) $path;
     }
 }

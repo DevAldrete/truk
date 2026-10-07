@@ -1,4 +1,6 @@
 import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
+import { t } from '@/lib/i18n';
 
 export type QueuedCommand = {
     id: string;
@@ -9,8 +11,10 @@ export type QueuedCommand = {
 };
 
 const STORAGE_KEY = 'truk.driver.queue';
+const FAILED_KEY = 'truk.driver.queue.failed';
 
-const items = ref<QueuedCommand[]>(load());
+const items = ref<QueuedCommand[]>(load(STORAGE_KEY));
+const failed = ref<QueuedCommand[]>(load(FAILED_KEY));
 let flushing = false;
 
 /**
@@ -21,6 +25,7 @@ let flushing = false;
  */
 export function useOfflineQueue() {
     const pending = computed(() => items.value.length);
+    const failedCount = computed(() => failed.value.length);
 
     const enqueue = (
         url: string,
@@ -37,7 +42,7 @@ export function useOfflineQueue() {
                 queuedAt: new Date().toISOString(),
             },
         ];
-        persist();
+        persist(STORAGE_KEY, items.value);
     };
 
     const flush = async () => {
@@ -46,6 +51,7 @@ export function useOfflineQueue() {
         }
 
         flushing = true;
+        let rejected = 0;
 
         try {
             for (const item of items.value) {
@@ -62,17 +68,28 @@ export function useOfflineQueue() {
                         body: JSON.stringify(body),
                     });
 
-                    // A 4xx means the server rejected the command; drop it so a
-                    // bad payload cannot block the queue forever.
-                    if (
-                        response.ok ||
-                        (response.status >= 400 && response.status < 500)
-                    ) {
-                        items.value = items.value.filter(
-                            (queued) => queued.id !== item.id,
-                        );
-                        persist();
+                    if (response.ok) {
+                        remove(item.id);
+
+                        continue;
                     }
+
+                    // Session expiry, throttling, and transient server errors
+                    // are worth retrying once the situation changes.
+                    if (
+                        [408, 419, 429].includes(response.status) ||
+                        response.status >= 500
+                    ) {
+                        continue;
+                    }
+
+                    // A permanent rejection (validation, forbidden, missing).
+                    // Keep the payload so nothing is destroyed, but stop
+                    // retrying it and tell the user it needs attention.
+                    failed.value = [...failed.value, item];
+                    persist(FAILED_KEY, failed.value);
+                    remove(item.id);
+                    rejected += 1;
                 } catch {
                     // Still offline or a transient error: keep it for later.
                 }
@@ -80,9 +97,27 @@ export function useOfflineQueue() {
         } finally {
             flushing = false;
         }
+
+        if (rejected > 0) {
+            toast.error(
+                t(':count offline entries could not be synced.', {
+                    count: rejected,
+                }),
+            );
+        }
     };
 
-    return { items, pending, enqueue, flush };
+    const clearFailed = () => {
+        failed.value = [];
+        persist(FAILED_KEY, failed.value);
+    };
+
+    return { items, failed, failedCount, pending, enqueue, flush, clearFailed };
+}
+
+function remove(id: string): void {
+    items.value = items.value.filter((queued) => queued.id !== id);
+    persist(STORAGE_KEY, items.value);
 }
 
 function headers(): Record<string, string> {
@@ -100,14 +135,14 @@ function xsrfToken(): string {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
-function load(): QueuedCommand[] {
+function load(key: string): QueuedCommand[] {
     try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+        return JSON.parse(localStorage.getItem(key) ?? '[]');
     } catch {
         return [];
     }
 }
 
-function persist(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items.value));
+function persist(key: string, value: QueuedCommand[]): void {
+    localStorage.setItem(key, JSON.stringify(value));
 }

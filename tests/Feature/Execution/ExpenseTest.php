@@ -116,3 +116,24 @@ test('a driver may only record expenses on their assigned trip', function () {
         'idempotency_key' => (string) Str::uuid(),
     ])->assertForbidden();
 });
+
+test('a receipt over the configured limit is rejected with a validation error', function () {
+    Storage::fake('evidence');
+    config(['uploads.max_kilobytes' => 1]);
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $trip = Trip::factory()->for($team)->create();
+
+    $this->actingAs($user)
+        ->from(route('trips.show', [$team, $trip]))
+        ->post(route('driver.trips.expenses.store', [$team, $trip]), [
+            'type' => 'misc',
+            'amount' => '75.50',
+            'receipt' => UploadedFile::fake()->image('receipt.jpg')->size(5),
+            'idempotency_key' => (string) Str::uuid(),
+        ])
+        ->assertSessionHasErrors('receipt');
+
+    $this->assertDatabaseCount('expenses', 0);
+});

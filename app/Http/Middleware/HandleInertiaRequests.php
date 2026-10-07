@@ -50,6 +50,11 @@ class HandleInertiaRequests extends Middleware
             'teams' => fn () => $user?->toUserTeams(includeCurrent: true) ?? [],
             'locale' => app()->getLocale(),
             'availableLocales' => Locale::options(),
+            'uploadLimits' => [
+                'maxKilobytes' => config('uploads.max_kilobytes'),
+                'maxSignatureKilobytes' => config('uploads.signature_max_kilobytes'),
+                'maxFiles' => 10,
+            ],
             'translations' => fn (): array => $this->translations(),
         ];
     }

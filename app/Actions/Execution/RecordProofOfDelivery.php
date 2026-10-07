@@ -84,10 +84,18 @@ class RecordProofOfDelivery
             ]);
         }
 
+        $maxBytes = (int) config('uploads.signature_max_kilobytes') * 1024;
+
+        if (strlen($binary) > $maxBytes) {
+            throw ValidationException::withMessages([
+                'signature' => __('The signature is too large. Please sign again.'),
+            ]);
+        }
+
         $extension = $matches[1] === 'jpeg' ? 'jpg' : $matches[1];
         $path = $base.'/signature.'.$extension;
 
-        Storage::disk('evidence')->put($path, $binary);
+        $this->put($path, $binary);
 
         return $path;
     }
@@ -101,8 +109,33 @@ class RecordProofOfDelivery
     protected function storeUploads(string $directory, array $files): array
     {
         return collect($files)
-            ->map(fn (UploadedFile $file): string => (string) $file->store($directory, 'evidence'))
+            ->map(function (UploadedFile $file) use ($directory): string {
+                $path = $file->store($directory, 'evidence');
+
+                if ($path === false) {
+                    throw ValidationException::withMessages([
+                        'photos' => __('The file could not be stored. Please try again.'),
+                    ]);
+                }
+
+                return (string) $path;
+            })
             ->values()
             ->all();
+    }
+
+    /**
+     * Write a file to the private evidence disk, failing loudly instead of
+     * silently storing an empty path.
+     */
+    protected function put(string $path, string $contents): void
+    {
+        $stored = Storage::disk('evidence')->put($path, $contents);
+
+        if ($stored === false) {
+            throw ValidationException::withMessages([
+                'signature' => __('The file could not be stored. Please try again.'),
+            ]);
+        }
     }
 }

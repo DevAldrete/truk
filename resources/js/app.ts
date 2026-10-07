@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import DriverLayout from '@/layouts/driver/DriverLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { initializeErrorFeedback } from '@/lib/errorFeedback';
 import { initializeFlashToast } from '@/lib/flashToast';
 import { t } from '@/lib/i18n';
 
@@ -46,6 +47,9 @@ initializeTheme();
 
 // This will listen for flash toast data from the server...
 initializeFlashToast();
+
+// This reports failures that are not field-level validation errors...
+initializeErrorFeedback();
 
 // Register the offline-first service worker in production builds.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

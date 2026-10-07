@@ -8,6 +8,7 @@ use App\Http\Middleware\SetTeamUrlDefaults;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -40,4 +41,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // A body larger than `post_max_size` is discarded by PHP before any
+        // validation runs. This fires before the session middleware, so we
+        // cannot flash a message; return a plain 413 and let the client error
+        // handler explain it in the user's language.
+        $exceptions->render(function (PostTooLargeException $exception, Request $request) {
+            if (! $request->header('X-Inertia')) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => __('The file is too large to upload. Please choose a smaller file.'),
+            ], 413);
+        });
     })->create();

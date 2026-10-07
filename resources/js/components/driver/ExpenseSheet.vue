@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { Fuel } from '@lucide/vue';
+import { useForm, usePage } from '@inertiajs/vue3';
+import { Fuel, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import InputError from '@/components/InputError.vue';
@@ -26,6 +26,11 @@ import {
 import { useOfflineQueue } from '@/composables/useOfflineQueue';
 import { useOnlineStatus } from '@/composables/useOnlineStatus';
 import { t } from '@/lib/i18n';
+import {
+    compressImage,
+    formatMaxSize,
+    validateEvidenceFiles,
+} from '@/lib/evidence';
 import { store } from '@/routes/driver/trips/expenses';
 import type { Option } from '@/types';
 
@@ -39,6 +44,8 @@ const props = defineProps<{
 const open = ref(false);
 const { online } = useOnlineStatus();
 const { enqueue } = useOfflineQueue();
+const page = usePage();
+const maxKilobytes = computed(() => page.props.uploadLimits.maxKilobytes);
 
 const url = computed(() =>
     store.url({ current_team: props.teamSlug, trip: props.tripId }),
@@ -57,8 +64,49 @@ const form = useForm({
 
 const isFuel = computed(() => form.type === 'fuel');
 
-const onReceipt = (event: Event) => {
-    form.receipt = (event.target as HTMLInputElement).files?.[0] ?? null;
+const clientReceiptError = ref<string | undefined>();
+
+const receiptError = computed(
+    () => clientReceiptError.value ?? form.errors.receipt,
+);
+
+const onReceipt = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    // Allow picking the same file again after removing it.
+    input.value = '';
+    clientReceiptError.value = undefined;
+
+    if (file === null) {
+        form.receipt = null;
+
+        return;
+    }
+
+    const { errors } = validateEvidenceFiles(
+        [file],
+        'document',
+        maxKilobytes.value,
+        1,
+    );
+
+    if (errors.length > 0) {
+        clientReceiptError.value = errors[0];
+        toast.error(errors[0]);
+        form.receipt = null;
+
+        return;
+    }
+
+    form.receipt = file.type.startsWith('image/')
+        ? await compressImage(file)
+        : file;
+};
+
+const removeReceipt = () => {
+    form.receipt = null;
+    clientReceiptError.value = undefined;
 };
 
 const basePayload = () => ({
@@ -76,6 +124,16 @@ const basePayload = () => ({
 
 const submit = () => {
     if (!online.value) {
+        if (form.receipt !== null) {
+            toast.error(
+                t(
+                    'The receipt needs a connection. Remove it or reconnect to save.',
+                ),
+            );
+
+            return;
+        }
+
         enqueue(url.value, 'post', basePayload());
         toast.success(t('Saved offline. It will sync when you reconnect.'));
         open.value = false;
@@ -96,7 +154,9 @@ const submit = () => {
         onSuccess: () => {
             open.value = false;
             form.reset();
+            clientReceiptError.value = undefined;
         },
+        onError: () => toast.error(t('Please fix the highlighted fields.')),
     });
 };
 </script>
@@ -216,6 +276,32 @@ const submit = () => {
                         accept="image/*,application/pdf"
                         @input="onReceipt"
                     />
+                    <p class="text-xs text-muted-foreground">
+                        {{
+                            $t('A photo or PDF, up to :size.', {
+                                size: formatMaxSize(maxKilobytes),
+                            })
+                        }}
+                    </p>
+
+                    <div
+                        v-if="form.receipt"
+                        class="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-xs"
+                    >
+                        <span class="min-w-0 truncate">{{
+                            form.receipt.name
+                        }}</span>
+                        <button
+                            type="button"
+                            class="shrink-0 text-muted-foreground hover:text-destructive"
+                            :aria-label="$t('Remove')"
+                            @click="removeReceipt"
+                        >
+                            <X class="size-3.5" />
+                        </button>
+                    </div>
+
+                    <InputError :message="receiptError" />
                 </div>
             </form>
 

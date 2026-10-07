@@ -25,6 +25,11 @@ declare module '@inertiajs/core' {
             teams: Team[];
             locale: string;
             availableLocales: { value: string; label: string }[];
+            uploadLimits: {
+                maxKilobytes: number;
+                maxSignatureKilobytes: number;
+                maxFiles: number;
+            };
             translations: Record<string, string>;
             [key: string]: unknown;
         };

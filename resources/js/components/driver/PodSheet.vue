@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { FileSignature } from '@lucide/vue';
+import { useForm, usePage } from '@inertiajs/vue3';
+import { FileSignature, X } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import InputError from '@/components/InputError.vue';
@@ -19,6 +19,12 @@ import {
 import { useOfflineQueue } from '@/composables/useOfflineQueue';
 import { useOnlineStatus } from '@/composables/useOnlineStatus';
 import { t } from '@/lib/i18n';
+import {
+    MAX_EVIDENCE_FILES,
+    compressImage,
+    formatMaxSize,
+    validateEvidenceFiles,
+} from '@/lib/evidence';
 import { store } from '@/routes/driver/trips/stops/pod';
 import type { DriverStop } from '@/types';
 
@@ -31,6 +37,8 @@ const props = defineProps<{
 const open = ref(false);
 const { online } = useOnlineStatus();
 const { enqueue } = useOfflineQueue();
+const page = usePage();
+const maxKilobytes = computed(() => page.props.uploadLimits.maxKilobytes);
 
 const url = computed(() =>
     store.url({
@@ -50,6 +58,21 @@ const form = useForm({
     recipient_name: '',
     consent: true,
     signature: '',
+});
+
+const clientPhotoErrors = ref<string[]>([]);
+
+/**
+ * The first server error attached to the photo collection (`photos` or
+ * `photos.0`, `photos.1`, …), which the form does not otherwise display.
+ */
+const photoError = computed(() => {
+    const errors = form.errors as Record<string, string | undefined>;
+    const key = Object.keys(errors).find(
+        (name) => name === 'photos' || name.startsWith('photos.'),
+    );
+
+    return key ? errors[key] : undefined;
 });
 
 onMounted(() => {
@@ -111,12 +134,48 @@ const clear = () => {
     signature.value = '';
 };
 
-const onPhotos = (event: Event) => {
-    photos.value = Array.from((event.target as HTMLInputElement).files ?? []);
+const onPhotos = async (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const selected = Array.from(input.files ?? []);
+
+    // Allow picking the same file again after removing it.
+    input.value = '';
+
+    const remaining = Math.max(MAX_EVIDENCE_FILES - photos.value.length, 0);
+
+    const { accepted, errors } = validateEvidenceFiles(
+        selected,
+        'image',
+        maxKilobytes.value,
+        remaining,
+    );
+
+    clientPhotoErrors.value = errors;
+    errors.forEach((message) => toast.error(message));
+
+    const compressed = await Promise.all(
+        accepted.map((file) => compressImage(file)),
+    );
+
+    photos.value = [...photos.value, ...compressed];
+};
+
+const removePhoto = (index: number) => {
+    photos.value = photos.value.filter((_, i) => i !== index);
 };
 
 const submit = () => {
     if (!online.value) {
+        if (photos.value.length > 0) {
+            toast.error(
+                t(
+                    'Photos need a connection. Remove them or reconnect to save.',
+                ),
+            );
+
+            return;
+        }
+
         if (signature.value === '') {
             toast.error(t('Connect to the network to attach photos.'));
 
@@ -139,7 +198,7 @@ const submit = () => {
     form.transform(() => ({
         ...form.data(),
         signature: signature.value,
-        photos,
+        photos: photos.value,
         captured_at: new Date().toISOString(),
         idempotency_key: crypto.randomUUID(),
     }));
@@ -152,7 +211,9 @@ const submit = () => {
             clear();
             form.reset();
             photos.value = [];
+            clientPhotoErrors.value = [];
         },
+        onError: () => toast.error(t('Please fix the highlighted fields.')),
     });
 };
 </script>
@@ -217,6 +278,44 @@ const submit = () => {
                         multiple
                         @input="onPhotos"
                     />
+                    <p class="text-xs text-muted-foreground">
+                        {{
+                            $t('Up to :max images, :size each.', {
+                                max: MAX_EVIDENCE_FILES,
+                                size: formatMaxSize(maxKilobytes),
+                            })
+                        }}
+                    </p>
+
+                    <ul v-if="photos.length" class="grid gap-1">
+                        <li
+                            v-for="(photo, index) in photos"
+                            :key="`${photo.name}-${index}`"
+                            class="flex items-center justify-between gap-2 rounded-md border px-2 py-1 text-xs"
+                        >
+                            <span class="min-w-0 truncate">{{
+                                photo.name
+                            }}</span>
+                            <button
+                                type="button"
+                                class="shrink-0 text-muted-foreground hover:text-destructive"
+                                :aria-label="$t('Remove')"
+                                @click="removePhoto(index)"
+                            >
+                                <X class="size-3.5" />
+                            </button>
+                        </li>
+                    </ul>
+
+                    <p
+                        v-for="(message, index) in clientPhotoErrors"
+                        :key="index"
+                        class="text-sm text-red-600 dark:text-red-500"
+                    >
+                        {{ message }}
+                    </p>
+
+                    <InputError :message="photoError" />
                 </div>
 
                 <label class="flex items-center gap-2 text-sm">
