@@ -29,6 +29,48 @@ test('packages can be added to a shipment and numbering continues', function () 
     expect(Package::query()->where('shipment_id', $shipment->id)->first()->weight_grams)->toBe(2500);
 });
 
+test('a request cannot add more packages than the per-request limit', function () {
+    config([
+        'shipments.max_packages_per_request' => 2,
+        'shipments.max_packages_per_shipment' => 10,
+    ]);
+
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Dispatcher->value]);
+    $shipment = Shipment::factory()->for($team)->create();
+
+    $this->actingAs($user)
+        ->from(route('shipments.show', [$team, $shipment]))
+        ->post(route('shipments.packages.store', [$team, $shipment]), ['count' => 3])
+        ->assertSessionHasErrors('count');
+
+    $this->assertDatabaseCount('packages', 0);
+});
+
+test('a shipment cannot exceed its package limit', function () {
+    config([
+        'shipments.max_packages_per_shipment' => 3,
+        'shipments.max_packages_per_request' => 5,
+    ]);
+
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Dispatcher->value]);
+    $shipment = Shipment::factory()->for($team)->create();
+
+    $this->actingAs($user)
+        ->post(route('shipments.packages.store', [$team, $shipment]), ['count' => 2])
+        ->assertRedirect();
+
+    $this->actingAs($user)
+        ->from(route('shipments.show', [$team, $shipment]))
+        ->post(route('shipments.packages.store', [$team, $shipment]), ['count' => 2])
+        ->assertSessionHasErrors('count');
+
+    $this->assertDatabaseCount('packages', 2);
+});
+
 test('a package cannot be reached through another shipment', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();

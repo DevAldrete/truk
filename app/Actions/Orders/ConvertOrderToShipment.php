@@ -3,6 +3,7 @@
 namespace App\Actions\Orders;
 
 use App\Actions\GenerateDocumentNumber;
+use App\Actions\Shipments\StorePackages;
 use App\Enums\ShipmentStatus;
 use App\Models\Location;
 use App\Models\Order;
@@ -17,7 +18,10 @@ use Illuminate\Support\Facades\DB;
  */
 class ConvertOrderToShipment
 {
-    public function __construct(private GenerateDocumentNumber $numbers) {}
+    public function __construct(
+        private GenerateDocumentNumber $numbers,
+        private StorePackages $packages,
+    ) {}
 
     /**
      * Create a shipment from the given order.
@@ -60,23 +64,10 @@ class ConvertOrderToShipment
                 ]);
             }
 
-            $this->generatePackages($team, $shipment, (int) ($data['package_count'] ?? 0));
+            $this->packages->handle($team, $shipment, (int) ($data['package_count'] ?? 0));
 
             return $shipment->load('items', 'packages');
         });
-    }
-
-    /**
-     * Generate the given number of packages for the shipment.
-     */
-    protected function generatePackages(Team $team, Shipment $shipment, int $count): void
-    {
-        for ($index = 1; $index <= $count; $index++) {
-            $team->packages()->create([
-                'shipment_id' => $shipment->id,
-                'code' => sprintf('%s-%s-%03d', 'PKG', $shipment->id, $index),
-            ]);
-        }
     }
 
     /**

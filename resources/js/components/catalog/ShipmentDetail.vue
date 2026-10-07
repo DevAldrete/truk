@@ -91,6 +91,10 @@ const removePackage = (packageId: number) => {
 
 const totalWeightKg = computed(() => props.shipment.weight_grams / 1000);
 const totalVolumeM3 = computed(() => props.shipment.volume_cm3 / 1000000);
+const packageLimit = computed(() => props.shipment.package_limit);
+const remainingPackages = computed(() =>
+    Math.max(packageLimit.value - props.shipment.packages_count, 0),
+);
 </script>
 
 <template>
@@ -348,7 +352,23 @@ const totalVolumeM3 = computed(() => props.shipment.volume_cm3 / 1000000);
                     <h3 class="text-sm font-semibold">
                         {{ $t('Packages') }}
                     </h3>
+                    <span class="text-xs text-muted-foreground">
+                        {{
+                            $t(':count of :max', {
+                                count: shipment.packages_count,
+                                max: packageLimit,
+                            })
+                        }}
+                    </span>
                 </div>
+
+                <p class="mt-1 text-xs text-muted-foreground">
+                    {{
+                        $t(
+                            'Packages are the individual units scanned on the road.',
+                        )
+                    }}
+                </p>
 
                 <ul
                     v-if="shipment.packages.length"
@@ -396,6 +416,7 @@ const totalVolumeM3 = computed(() => props.shipment.volume_cm3 / 1000000);
                             v-model.number="packageForm.count"
                             type="number"
                             min="1"
+                            :max="remainingPackages"
                             class="w-24"
                         />
                     </div>
@@ -416,13 +437,16 @@ const totalVolumeM3 = computed(() => props.shipment.volume_cm3 / 1000000);
                         type="submit"
                         size="sm"
                         variant="outline"
-                        :disabled="packageForm.processing"
+                        :disabled="
+                            packageForm.processing || remainingPackages === 0
+                        "
                         data-test="add-packages"
                     >
                         <Plus class="size-4" />
                         {{ $t('Add packages') }}
                     </Button>
                     <InputError :message="packageForm.errors.count" />
+                    <InputError :message="packageForm.errors.weight_kg" />
                 </form>
             </section>
         </div>

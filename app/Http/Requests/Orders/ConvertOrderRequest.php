@@ -39,7 +39,7 @@ class ConvertOrderRequest extends FormRequest
                 'integer',
                 Rule::exists('locations', 'id')->where('team_id', $this->team()->id),
             ],
-            'package_count' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'package_count' => ['nullable', 'integer', 'min:0', 'max:'.config('shipments.max_packages_per_shipment')],
         ];
     }
 

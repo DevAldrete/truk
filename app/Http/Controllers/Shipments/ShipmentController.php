@@ -183,6 +183,7 @@ class ShipmentController extends Controller
             ...$this->summary($shipment),
             'items_count' => $shipment->items->count(),
             'packages_count' => $shipment->packages->count(),
+            'package_limit' => (int) config('shipments.max_packages_per_shipment'),
             'items' => $shipment->items
                 ->map(fn (ShipmentItem $item) => [
                     'id' => $item->id,

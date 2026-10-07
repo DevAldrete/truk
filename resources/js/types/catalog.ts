@@ -257,6 +257,7 @@ export type ShipmentPackage = {
 };
 
 export type ShipmentDetail = Shipment & {
+    package_limit: number;
     items: ShipmentItem[];
     packages: ShipmentPackage[];
 };
