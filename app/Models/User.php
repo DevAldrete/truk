@@ -19,7 +19,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $name
- * @property string $email
+ * @property string|null $username
+ * @property string|null $email
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $locale
@@ -36,12 +37,23 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Team> $teams
  * @property-read Collection<int, Driver> $driverProfiles
  */
-#[Fillable(['name', 'email', 'password', 'locale', 'current_team_id'])]
+#[Fillable(['name', 'username', 'email', 'password', 'locale', 'current_team_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasTeams, Notifiable;
+
+    /**
+     * Determine whether the user has a verified email.
+     *
+     * A staff account created by an organization may have no email at all; it
+     * is treated as verified so the `verified` middleware never blocks it.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email === null || parent::hasVerifiedEmail();
+    }
 
     /**
      * Get the driver profiles linked to this login, across every team.

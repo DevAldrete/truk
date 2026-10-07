@@ -36,7 +36,7 @@ const showAvatar = computed(
             team.name
         }}</span>
         <span
-            v-else-if="showEmail"
+            v-else-if="showEmail && user.email"
             class="truncate text-xs text-muted-foreground"
             >{{ user.email }}</span
         >

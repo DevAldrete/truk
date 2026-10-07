@@ -18,7 +18,9 @@ import type { TeamInvitationContext } from '@/types';
 defineOptions({
     layout: () => ({
         title: t('Log in to your account'),
-        description: t('Enter your email and password below to log in'),
+        description: t(
+            'Enter your email or username and password below to log in',
+        ),
     }),
 });
 
@@ -53,15 +55,15 @@ defineProps<{
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">{{ $t('Email address') }}</Label>
+                <Label for="email">{{ $t('Email or username') }}</Label>
                 <Input
                     id="email"
-                    type="email"
+                    type="text"
                     name="email"
                     required
                     v-focus
                     :tabindex="1"
-                    autocomplete="email"
+                    autocomplete="username"
                     placeholder="email@example.com"
                 />
                 <InputError :message="errors.email" />

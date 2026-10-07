@@ -3,6 +3,7 @@ import { Form, Head, router } from '@inertiajs/vue3';
 import { ChevronDown, Mail, UserPlus, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import CancelInvitationModal from '@/components/CancelInvitationModal.vue';
+import CreateMemberModal from '@/components/CreateMemberModal.vue';
 import DeleteTeamModal from '@/components/DeleteTeamModal.vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -65,6 +66,7 @@ defineOptions({
 const { getInitials } = useInitials();
 
 const inviteDialogOpen = ref(false);
+const createMemberDialogOpen = ref(false);
 const deleteDialogOpen = ref(false);
 const removeMemberDialogOpen = ref(false);
 const memberToRemove = ref<TeamMember | null>(null);
@@ -155,13 +157,24 @@ const confirmCancelInvitation = (invitation: TeamInvitation) => {
                     "
                 />
 
-                <Button
-                    v-if="permissions.canCreateInvitation"
-                    data-test="invite-member-button"
-                    @click="inviteDialogOpen = true"
-                >
-                    <UserPlus /> {{ $t('Invite member') }}
-                </Button>
+                <div class="flex items-center gap-2">
+                    <Button
+                        v-if="permissions.canAddMember"
+                        variant="outline"
+                        data-test="create-member-button"
+                        @click="createMemberDialogOpen = true"
+                    >
+                        <UserPlus /> {{ $t('Create member') }}
+                    </Button>
+
+                    <Button
+                        v-if="permissions.canCreateInvitation"
+                        data-test="invite-member-button"
+                        @click="inviteDialogOpen = true"
+                    >
+                        <UserPlus /> {{ $t('Invite member') }}
+                    </Button>
+                </div>
             </div>
 
             <div class="space-y-3">
@@ -348,6 +361,14 @@ const confirmCancelInvitation = (invitation: TeamInvitation) => {
         :available-roles="availableRoles"
         :open="inviteDialogOpen"
         @update:open="inviteDialogOpen = $event"
+    />
+
+    <CreateMemberModal
+        v-if="permissions.canAddMember"
+        :team="team"
+        :available-roles="availableRoles"
+        :open="createMemberDialogOpen"
+        @update:open="createMemberDialogOpen = $event"
     />
 
     <RemoveMemberModal
