@@ -23,7 +23,26 @@ test('team member roles can be updated by owners', function () {
     expect($team->members()->where('user_id', $member->id)->first()->pivot->role->value)->toEqual(TeamRole::Admin->value);
 });
 
-test('team member roles cannot be updated by non owners', function () {
+test('team member roles cannot be updated by dispatchers', function () {
+    $owner = User::factory()->create();
+    $dispatcher = User::factory()->create();
+    $member = User::factory()->create();
+    $team = Team::factory()->create();
+
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($dispatcher, ['role' => TeamRole::Dispatcher->value]);
+    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+    $response = $this
+        ->actingAs($dispatcher)
+        ->patch(route('teams.members.update', [$team, $member]), [
+            'role' => TeamRole::Admin->value,
+        ]);
+
+    $response->assertForbidden();
+});
+
+test('an admin can update a member role', function () {
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $member = User::factory()->create();
@@ -33,13 +52,49 @@ test('team member roles cannot be updated by non owners', function () {
     $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
     $team->members()->attach($member, ['role' => TeamRole::Member->value]);
 
-    $response = $this
-        ->actingAs($admin)
+    $this->actingAs($admin)
         ->patch(route('teams.members.update', [$team, $member]), [
-            'role' => TeamRole::Admin->value,
-        ]);
+            'role' => TeamRole::Dispatcher->value,
+        ])
+        ->assertRedirect(route('teams.edit', $team));
 
-    $response->assertForbidden();
+    expect($team->members()->where('user_id', $member->id)->first()->pivot->role->value)->toBe(TeamRole::Dispatcher->value);
+});
+
+test('an admin cannot change the owner role', function () {
+    $owner = User::factory()->create();
+    $admin = User::factory()->create();
+    $team = Team::factory()->create();
+
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
+
+    $this->actingAs($admin)
+        ->from(route('teams.edit', $team))
+        ->patch(route('teams.members.update', [$team, $owner]), [
+            'role' => TeamRole::Admin->value,
+        ])
+        ->assertSessionHasErrors('role');
+
+    expect($team->members()->where('user_id', $owner->id)->first()->pivot->role->value)->toBe(TeamRole::Owner->value);
+});
+
+test('an admin cannot change their own role', function () {
+    $owner = User::factory()->create();
+    $admin = User::factory()->create();
+    $team = Team::factory()->create();
+
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
+
+    $this->actingAs($admin)
+        ->from(route('teams.edit', $team))
+        ->patch(route('teams.members.update', [$team, $admin]), [
+            'role' => TeamRole::Member->value,
+        ])
+        ->assertSessionHasErrors('role');
+
+    expect($team->members()->where('user_id', $admin->id)->first()->pivot->role->value)->toBe(TeamRole::Admin->value);
 });
 
 test('team members can be removed by owners', function () {
@@ -59,7 +114,24 @@ test('team members can be removed by owners', function () {
     expect($member->fresh()->belongsToTeam($team))->toBeFalse();
 });
 
-test('team members cannot be removed by non owners', function () {
+test('team members cannot be removed by dispatchers', function () {
+    $owner = User::factory()->create();
+    $dispatcher = User::factory()->create();
+    $member = User::factory()->create();
+    $team = Team::factory()->create();
+
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($dispatcher, ['role' => TeamRole::Dispatcher->value]);
+    $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+
+    $response = $this
+        ->actingAs($dispatcher)
+        ->delete(route('teams.members.destroy', [$team, $member]));
+
+    $response->assertForbidden();
+});
+
+test('an admin can remove a member', function () {
     $owner = User::factory()->create();
     $admin = User::factory()->create();
     $member = User::factory()->create();
@@ -69,11 +141,11 @@ test('team members cannot be removed by non owners', function () {
     $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
     $team->members()->attach($member, ['role' => TeamRole::Member->value]);
 
-    $response = $this
-        ->actingAs($admin)
-        ->delete(route('teams.members.destroy', [$team, $member]));
+    $this->actingAs($admin)
+        ->delete(route('teams.members.destroy', [$team, $member]))
+        ->assertRedirect(route('teams.edit', $team));
 
-    $response->assertForbidden();
+    expect($member->fresh()->belongsToTeam($team))->toBeFalse();
 });
 
 test('team owner cannot be removed', function () {
