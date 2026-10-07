@@ -91,6 +91,21 @@ test('team owner cannot be removed', function () {
     expect($owner->fresh()->belongsToTeam($team))->toBeTrue();
 });
 
+test('the owner cannot change their own role', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+    $this->actingAs($owner)
+        ->from(route('teams.edit', $team))
+        ->patch(route('teams.members.update', [$team, $owner]), [
+            'role' => TeamRole::Member->value,
+        ])
+        ->assertSessionHasErrors('role');
+
+    expect($team->members()->where('user_id', $owner->id)->first()->pivot->role->value)->toBe(TeamRole::Owner->value);
+});
+
 test('team member role cannot be set to owner', function () {
     $owner = User::factory()->create();
     $member = User::factory()->create();

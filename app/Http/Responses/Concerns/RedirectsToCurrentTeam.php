@@ -2,6 +2,7 @@
 
 namespace App\Http\Responses\Concerns;
 
+use App\Enums\TeamRole;
 use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -13,6 +14,10 @@ trait RedirectsToCurrentTeam
         $team = $this->currentTeam($request);
 
         URL::defaults(['current_team' => $team->slug]);
+
+        if ($request->user()?->teamRole($team) === TeamRole::Driver) {
+            return "/{$team->slug}/driver";
+        }
 
         return "/{$team->slug}{$redirect}";
     }

@@ -13,6 +13,7 @@ const page = usePage();
 const { flush } = useOfflineQueue();
 
 const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
+const isDriver = computed(() => page.props.currentTeam?.role === 'driver');
 const homeUrl = computed(() =>
     driverIndex.url({ current_team: teamSlug.value }),
 );
@@ -48,6 +49,7 @@ onMounted(() => {
             <OfflineBadge />
 
             <Link
+                v-if="!isDriver"
                 :href="dashboardUrl"
                 class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-accent"
                 data-test="exit-driver-portal"

@@ -37,13 +37,14 @@ use App\Http\Controllers\Trips\TripDispatchController;
 use App\Http\Controllers\Trips\TripResourceController;
 use App\Http\Controllers\Trips\TripShipmentController;
 use App\Http\Middleware\EnsureTeamMembership;
+use App\Http\Middleware\RestrictDriverToPortal;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
 Route::post('locale', LocaleController::class)->name('locale.update');
 
 Route::prefix('{current_team}')
-    ->middleware(['auth', 'verified', EnsureTeamMembership::class])
+    ->middleware(['auth', 'verified', EnsureTeamMembership::class, RestrictDriverToPortal::class])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
 

@@ -56,13 +56,12 @@ test('a warehouse member cannot use the driver portal', function () {
         ->assertForbidden();
 });
 
-test('a driver can leave the portal for the team dashboard', function () {
+test('a planner can leave the portal for the team dashboard', function () {
     $team = Team::factory()->create();
-    $driverUser = User::factory()->create();
-    $team->members()->attach($driverUser, ['role' => TeamRole::Driver->value]);
-    Driver::factory()->for($team)->create(['user_id' => $driverUser->id]);
+    $planner = User::factory()->create();
+    $team->members()->attach($planner, ['role' => TeamRole::Dispatcher->value]);
 
-    $this->actingAs($driverUser)
+    $this->actingAs($planner)
         ->get(route('dashboard', $team))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('Dashboard'));

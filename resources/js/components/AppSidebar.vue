@@ -67,80 +67,105 @@ const canDrive = computed(() =>
     ),
 );
 
-const mainNavItems = computed<NavItem[]>(() => [
-    {
-        title: t('Dashboard'),
-        href: dashboardUrl.value,
-        icon: LayoutGrid,
-    },
-    {
-        title: t('Dispatch'),
-        href: dispatchUrl.value,
-        icon: Waypoints,
-    },
-    ...(canDrive.value
-        ? [
-              {
-                  title: t('Driver portal'),
-                  href: driverUrl.value,
-                  icon: Navigation,
-              },
-          ]
-        : []),
-    {
-        title: t('Parties'),
-        href: partiesIndex.url({ current_team: teamSlug.value }),
-        icon: Building2,
-    },
-    {
-        title: t('Locations'),
-        href: locationsIndex.url({ current_team: teamSlug.value }),
-        icon: MapPin,
-    },
-    {
-        title: t('Orders'),
-        href: ordersIndex.url({ current_team: teamSlug.value }),
-        icon: ClipboardList,
-    },
-    {
-        title: t('Shipments'),
-        href: shipmentsIndex.url({ current_team: teamSlug.value }),
-        icon: Package,
-    },
-    {
-        title: t('Loads'),
-        href: loadsIndex.url({ current_team: teamSlug.value }),
-        icon: Layers,
-    },
-    {
-        title: t('Trips'),
-        href: tripsIndex.url({ current_team: teamSlug.value }),
-        icon: Route,
-    },
-    {
-        title: t('Help'),
-        href: help.url({ current_team: teamSlug.value }),
-        icon: BookOpen,
-    },
-]);
+const isDriver = computed(() => page.props.currentTeam?.role === 'driver');
 
-const fleetNavItems = computed<NavItem[]>(() => [
-    {
-        title: t('Drivers'),
-        href: driversIndex.url({ current_team: teamSlug.value }),
-        icon: Users,
-    },
-    {
-        title: t('Vehicles'),
-        href: vehiclesIndex.url({ current_team: teamSlug.value }),
-        icon: Truck,
-    },
-    {
-        title: t('Trailers'),
-        href: trailersIndex.url({ current_team: teamSlug.value }),
-        icon: Container,
-    },
-]);
+const mainNavItems = computed<NavItem[]>(() => {
+    if (isDriver.value) {
+        return [
+            {
+                title: t('Driver portal'),
+                href: driverUrl.value,
+                icon: Navigation,
+            },
+            {
+                title: t('Help'),
+                href: help.url({ current_team: teamSlug.value }),
+                icon: BookOpen,
+            },
+        ];
+    }
+
+    return [
+        {
+            title: t('Dashboard'),
+            href: dashboardUrl.value,
+            icon: LayoutGrid,
+        },
+        {
+            title: t('Dispatch'),
+            href: dispatchUrl.value,
+            icon: Waypoints,
+        },
+        ...(canDrive.value
+            ? [
+                  {
+                      title: t('Driver portal'),
+                      href: driverUrl.value,
+                      icon: Navigation,
+                  },
+              ]
+            : []),
+        {
+            title: t('Parties'),
+            href: partiesIndex.url({ current_team: teamSlug.value }),
+            icon: Building2,
+        },
+        {
+            title: t('Locations'),
+            href: locationsIndex.url({ current_team: teamSlug.value }),
+            icon: MapPin,
+        },
+        {
+            title: t('Orders'),
+            href: ordersIndex.url({ current_team: teamSlug.value }),
+            icon: ClipboardList,
+        },
+        {
+            title: t('Shipments'),
+            href: shipmentsIndex.url({ current_team: teamSlug.value }),
+            icon: Package,
+        },
+        {
+            title: t('Loads'),
+            href: loadsIndex.url({ current_team: teamSlug.value }),
+            icon: Layers,
+        },
+        {
+            title: t('Trips'),
+            href: tripsIndex.url({ current_team: teamSlug.value }),
+            icon: Route,
+        },
+        {
+            title: t('Help'),
+            href: help.url({ current_team: teamSlug.value }),
+            icon: BookOpen,
+        },
+    ];
+});
+
+const fleetNavItems = computed<NavItem[]>(() => {
+    if (isDriver.value) {
+        return [];
+    }
+
+    return [
+        {
+            title: t('Drivers'),
+            href: driversIndex.url({ current_team: teamSlug.value }),
+            icon: Users,
+        },
+        {
+            title: t('Vehicles'),
+            href: vehiclesIndex.url({ current_team: teamSlug.value }),
+            icon: Truck,
+        },
+        {
+            title: t('Trailers'),
+            href: trailersIndex.url({ current_team: teamSlug.value }),
+            icon: Container,
+        },
+    ];
+});
 </script>
 
 <template>

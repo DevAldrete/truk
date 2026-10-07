@@ -12,8 +12,10 @@ import { t } from '@/lib/i18n';
  * suppressed so the app explains the failure in its own voice.
  */
 export function initializeErrorFeedback(): void {
-    router.on('error', () => {
-        toast.error(t('Please fix the highlighted fields.'));
+    router.on('error', (event) => {
+        const first = Object.values(event.detail.errors)[0];
+
+        toast.error(first ?? t('Please fix the highlighted fields.'));
 
         // Bring the first inline error into view so a long form or a bottom
         // sheet never hides the reason the submit failed.
