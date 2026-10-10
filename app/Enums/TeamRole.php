@@ -39,11 +39,16 @@ enum TeamRole: string
                 TeamPermission::ManageOperations,
                 TeamPermission::ExecuteOperations,
                 TeamPermission::OverrideCapacity,
+                TeamPermission::OverrideCompliance,
+                TeamPermission::ManageCompliance,
+                TeamPermission::ManageBilling,
+                TeamPermission::ViewCosts,
             ],
             self::Dispatcher => [
                 TeamPermission::ManageCatalog,
                 TeamPermission::ManageOperations,
                 TeamPermission::ExecuteOperations,
+                TeamPermission::ViewCosts,
             ],
             self::Warehouse => [
                 TeamPermission::ManageCatalog,

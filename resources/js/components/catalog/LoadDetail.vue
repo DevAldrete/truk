@@ -20,6 +20,7 @@ import {
     store as attachShipment,
 } from '@/routes/loads/shipments';
 import { show as showShipment } from '@/routes/shipments';
+import { show as showTrip } from '@/routes/trips';
 import type { LoadDetail, Option } from '@/types';
 
 const props = defineProps<{
@@ -287,6 +288,33 @@ const totalVolumeM3 = computed(() => props.load.totals.volume_cm3 / 1000000);
                         {{ $t('Add') }}
                     </Button>
                 </form>
+            </section>
+
+            <section v-if="load.trips.length" class="mt-6">
+                <h3 class="text-sm font-semibold">{{ $t('Trips') }}</h3>
+
+                <ul class="mt-2 divide-y rounded-lg border">
+                    <li
+                        v-for="trip in load.trips"
+                        :key="trip.id"
+                        class="flex items-center justify-between px-3 py-2 text-sm"
+                    >
+                        <Link
+                            class="font-medium hover:underline"
+                            :href="
+                                showTrip({
+                                    current_team: teamSlug,
+                                    trip: trip.id,
+                                })
+                            "
+                        >
+                            {{ trip.number }}
+                        </Link>
+                        <span class="text-xs text-muted-foreground">
+                            {{ trip.status_label }}
+                        </span>
+                    </li>
+                </ul>
             </section>
         </div>
     </div>

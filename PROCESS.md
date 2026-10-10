@@ -4,11 +4,15 @@ Working document: where the project stands, what comes next, and the decisions t
 are already locked in. Read this before starting a session. `README.md` holds the
 product scope, `IDEA.md` the domain rules; this file holds the _execution_ state.
 
-Last updated after the P4.5 UX and input-hardening pass and the roles/auth/execution
-follow-up (derived shipment status, organization-scoped username login, admin member
-management, driver confinement), with the scope locked to a **full-lifecycle TMS**:
-fiscal compliance (SAT/CFDI/Carta Porte), billing/settlement, and route optimization
-are now in scope, not deferred.
+Last updated after the operational hardening & workspace pass (P4.6): a correctness
+sweep (invitation escalation, dispatch pool, stop reordering, idempotency races,
+driver scoping), office incident triage, stop actual times + derived trip status, a
+compliance-aware dispatch gate, and a responsive, cross-linked workspace. The
+billing/legal seams (P4.7) are now in place: provider contracts + fakes, versioned
+global catalogs, fiscal master-data fields, the `trip_compliance` snapshot, and
+money-pipeline skeletons — tables and interfaces only, no logic. The scope stays
+locked to a **full-lifecycle TMS**: fiscal compliance (SAT/CFDI/Carta Porte),
+billing/settlement, and route optimization are in scope, not deferred.
 
 ---
 
@@ -105,6 +109,8 @@ The test suite is unaffected: `phpunit.xml` forces `DB_CONNECTION=sqlite` and
 | **P3**   | Planning & dispatch: loads, trips, stops, capacity, dispatch board                              | ✅ Done    |
 | **P4**   | Driver execution: offline PWA, scans, delivery attempts, POD, exceptions, fuel expenses          | ✅ Done    |
 | **P4.5** | UX & input hardening: uploads, validation feedback, package caps, numbering, domain clarity      | ✅ Done    |
+| **P4.6** | Operational hardening & workspace: correctness sweep, incident triage, compliance gate, responsive cross-linked UI | ✅ Done    |
+| **P4.7** | Billing/legal seams: provider contracts + fakes, global versioned catalogs, fiscal master-data fields, `trip_compliance`, money skeletons | ✅ Done    |
 | **P5**   | Visibility & hardening: tracking timeline, telematics, geofence/ETA, outbox, audit UI, files     | ⬜         |
 | **P6**   | Fiscal compliance: SAT catalogs, CFDI 4.0 + Carta Porte 3.0/3.1, PAC adapter, dispatch gate     | ⬜         |
 | **P7**   | Pricing & billing: rate engine, accessorials, fuel surcharge, 3-way match, invoicing, settlement | ⬜         |
@@ -343,6 +349,58 @@ The product is no longer a lean dispatch tool. Locked in:
   dashboard and blocks office routes for a user whose role is `driver`; the sidebar
   hides office navigation and login lands a driver in the portal. Owners, admins, and
   dispatchers keep full access.
+
+### 4.10 Computed in the operational hardening & workspace pass (P4.6)
+
+- **Bugs fixed before features.** Owner-invite privilege escalation, the dispatch pool
+  showing closed shipments, wrong-stop assignment when a shipment has no delivery
+  location, `ReorderStops` sequence gaps, the idempotency check-then-insert races
+  (now catch `UniqueConstraintViolationException` and clean up orphaned POD/expense
+  files), the unlocked over-delivery guard, unenforced order transitions, replayable
+  order conversion, driver-portal / POD-evidence scoping, and `switchTeam(null)`.
+- **Stop actuals.** `stops.actual_arrival_at`/`actual_departure_at` are written by
+  `arrive`/`complete`/`fail`/`skip`, so detention and ETA can be computed later.
+- **Trip status is derived from driver actions.** `DeriveTripStatus` advances
+  `dispatched → in_transit` once a stop is worked and `in_transit → completed` once
+  every stop is terminal. It never auto-dispatches a planned trip, so the gates below
+  are never bypassed; manual transitions stay permissioned.
+- **Compliance gates dispatch.** `AssertTripCompliance` reports expired driver
+  licences and expired driver/vehicle/trailer documents relative to the trip window.
+  `DispatchTrip` consolidates the capacity and compliance gates; each is overridable
+  only by owner/admin with a recorded reason (`OverrideCapacity`/`OverrideCompliance`)
+  and clears stale overrides when the gate passes. Only *expired* documents block;
+  mandatory presence is P6's fiscal gate.
+- **Incidents have an office surface.** `incidents.index/show` + a master–detail
+  triage board; resolving requires `ManageOperations` and records who/when/why.
+- **One responsive workspace.** `MasterDetailPage` makes every list/detail page usable
+  below `lg` (full-screen detail + back), and details cross-link the
+  Order → Shipment → Load → Trip graph (shipment is the hub), with breadcrumbs and ⌘K
+  covering every operational record. Times render via `lib/datetime.ts`; the unused
+  `NavFooter`/`AppHeader`/`AppHeaderLayout` were deleted.
+
+### 4.11 Computed in the billing/legal seams pass (P4.7)
+
+- **Every external provider is behind a contract with a fake.** `app/Contracts`
+  defines `PacProvider`, `TelematicsProvider`, `RoutingProvider`, `TollCatalog`, and
+  `BillingGateway`; `app/Contracts/Fakes` implements them and `AppServiceProvider`
+  binds the fakes. Real adapters swap in per phase; no vendor SDK touches domain
+  code.
+- **Global reference data is versioned and tenant-independent.** `catalog_versions`,
+  `sat_product_service_codes`, `sat_unit_codes`, `sat_postal_codes`, and
+  `toll_booths` are queried without the team scope and allow-listed in the tenancy
+  convention test.
+- **`trip_compliance` is the immutable fiscal snapshot** of a trip (payload, schema
+  version, status, CFDI UUID, XML/PDF paths), append-only; the PAC contract stamps
+  it in P6. No fiscal logic is wired yet.
+- **Fiscal fields land on master data** (parties: tax regime / CFDI use / tax ZIP;
+  locations: RFC; drivers: CURP / licence type / medical expiry; vehicles: year,
+  tare, axles, permit, insurance expiry, GPS device) as nullable columns.
+- **Enums and permissions are in place** (`CfdiType`, `DocumentStatus`,
+  `BillingStatus`, `SettlementStatus`; `ManageCompliance`, `ManageBilling`,
+  `ViewCosts`; `ExpenseType` gains viáticos / maniobras / multas / estadía).
+- **The money pipeline is tables and models only** (`rate_cards`/`rates`,
+  `invoices`/`invoice_lines`/`payments`, `settlements`/`settlement_lines`) with
+  integer minor units and a currency — no billing logic.
 
 ---
 
@@ -852,7 +910,6 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 
 | Item                                                                                        | Trigger to pick it up                 |
 | ------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `NavFooter.vue` is unused after the starter-kit links were removed                          | delete with the next nav change       |
 | No "restore" action for soft-deleted records                                                | a user asks for a deleted record back |
 | State/postal code are free text                                                             | SEPOMEX address catalog (P2/P9)       |
 | Full Spanish `validation.php` covers common rules only; every field now has an `attributes` label but uncommon rules still fall back to English | a missing message is reported |
@@ -866,7 +923,6 @@ The product wins on ease of use. These are acceptance criteria, not aspirations.
 | POD evidence is authorized per request, not a signed short-lived URL                        | P5 (temporary URLs)                   |
 | Service worker caches authenticated pages; clear the cache on logout                        | next auth/PWA hardening pass          |
 | Barcode/QR capture is manual code selection, no camera integration                           | a device scanner is requested         |
-| Trip status is not auto-derived from driver actions                                         | P5/P8                                 |
 | Username-only accounts have no self-service password reset; the owner cannot reset a member password yet | when a user loses their password |
 
 ---
@@ -881,7 +937,8 @@ app/Data/TeamContext.php              per-request/job tenant, set by EnsureTeamM
 app/Enums/                            Locale, TeamRole, TeamPermission, PartyType, ComplianceDocumentType,
                                       OrderStatus, ShipmentStatus, PackageStatus, LoadStatus, TripStatus,
                                       StopStatus, StopType, DeliveryOutcome, DeliveryFailureReason,
-                                      ScanType, IncidentType/Severity/Status, ExpenseType
+                                      ScanType, IncidentType/Severity/Status, ExpenseType,
+                                      CfdiType, DocumentStatus, BillingStatus, SettlementStatus
 app/Http/Controllers/Parties|Locations|SearchController.php
 app/Http/Controllers/Fleet/           Driver|Vehicle|Trailer (+ one document controller per parent)
 app/Http/Controllers/Orders/          OrderController, OrderShipmentController
@@ -894,19 +951,21 @@ app/Http/Controllers/Dispatch/        DispatchController (the board)
 app/Http/Controllers/Driver/          DriverPortalController, DeliveryAttemptController, ScanController,
                                       ProofOfDeliveryController, PodEvidenceController,
                                       StopStatusController, IncidentController, ExpenseController
-app/Http/Controllers/Incidents/       IncidentController (planner resolution)
+app/Http/Controllers/Incidents/       IncidentController (triage board + resolution)
 app/Actions/Orders|Shipments/         SaveOrder, ConvertOrderToShipment, StorePackages,
                                       DeriveShipmentStatus, DerivePackageStatus
 app/Actions/GenerateDocumentNumber.php highest-suffix, team-locked document numbering
 app/Actions/Trips/                    SaveTrip, AssignTripResources, ComputeTripCapacity, SaveStop,
                                       ReorderStops, AssignShipmentToTrip, UnassignShipmentFromTrip,
-                                      SyncTripShipments
+                                      SyncTripShipments, DeriveTripStatus, AssertTripCompliance,
+                                      DispatchTrip
 app/Actions/Execution/                RecordDeliveryAttempt, RecordScan, RecordProofOfDelivery,
                                       ReportIncident, UpdateIncidentStatus, RecordExpense,
                                       UpdateStopStatus
+app/Contracts/                        provider interfaces + fakes: Pac, Telematics, Routing, Toll, Billing
 app/Http/Middleware/                  EnsureTeamMembership (priority: before binding), SetLocale,
                                       RestrictDriverToPortal
-app/Policies/TeamPolicy.php           manageCatalog, manageOperations, executeOperations, overrideCapacity
+app/Policies/TeamPolicy.php           manageCatalog, manageOperations, executeOperations, overrideCapacity, overrideCompliance
 app/Rules/Rfc.php                     RFC shape (no check digit yet)
 config/filesystems.php                private `evidence` disk (serve disabled) for POD and receipts
 config/uploads.php                    effective evidence size limit (min of config and PHP)
@@ -917,17 +976,19 @@ lang/{es,en}/                         roles, party_types, compliance_document_ty
 resources/js/lib/i18n.ts              t() and the global $t
 resources/js/lib/errorFeedback.ts     global toast + scroll for network/HTTP/validation failures
 resources/js/lib/evidence.ts          client-side evidence type/size checks and image compression
+resources/js/lib/datetime.ts          locale/timezone date formatting + Mexico TIMEZONES
 resources/js/composables/useFilteredList.ts   URL-backed, debounced list filtering
 resources/js/composables/useOfflineQueue.ts   offline driver command queue (idempotent replay)
 resources/js/composables/useOnlineStatus.ts   connectivity tracking
 resources/js/components/CommandPalette.vue    ⌘K: nav commands + server search
-resources/js/components/catalog/      CatalogListLayout, ConfigurationField, party/location/fleet/order/
-                                      shipment/load/trip detail + form sheets, CapacityGauge, DispatchTripCard
+resources/js/components/catalog/      MasterDetailPage (responsive list/detail shell), CatalogListLayout,
+                                      ConfigurationField, party/location/fleet/order/shipment/load/trip/
+                                      incident detail + form sheets, CapacityGauge, DispatchTripCard
 resources/js/components/driver/       StopExecutionCard + StopStatusButtons + attempt/scan/POD/incident/
                                       expense sheets + OfflineBadge
 resources/js/layouts/driver/          DriverLayout (mobile-first portal shell)
 resources/js/pages/                   parties/, locations/, fleet/, orders/, shipments/, loads/, trips/,
-                                      dispatch/, driver/, Help.vue (glossary + flow)
+                                      incidents/, dispatch/, driver/, Help.vue (glossary + flow)
 public/sw.js, public/manifest.webmanifest      offline-first PWA shell
 tests/Feature/Tenancy/                trait behaviour + the model convention test
 tests/Feature/Fleet/                  drivers, vehicles, trailers, compliance documents
@@ -935,12 +996,14 @@ tests/Feature/Orders|Shipments/       orders, conversion, shipments, packages
 tests/Feature/Trips|Loads|Dispatch/   trips, stops, capacity, loads, the board
 tests/Feature/Execution/              delivery attempts, scans, POD, incidents, expenses, stop status,
                                       driver portal
+tests/Feature/Incidents/              office incident triage board
 ```
 
-Planned (not yet built): `app/Models` gains TrackingEvent/Position/CfdiDocument/Rate/Invoice;
-`app/Contracts` holds the provider interfaces (Pac, Telematics, Routing, Storage,
-Notifications, Billing); `app/Enums` gains the remaining compliance types;
-`routes/api.php` exposes the versioned API.
+Planned (not yet built): `app/Models` gains TrackingEvent/Position and the CFDI
+document model; `app/Contracts` gains Storage and Notifications; `routes/api.php`
+exposes the versioned API. The billing/legal seams are in place — contracts + fakes,
+versioned global catalogs, fiscal master-data fields, `trip_compliance`, and the
+money-pipeline tables/models — but carry no logic yet.
 
 Use `php artisan make:*` for new files, `--no-interaction`, and follow the sibling
 file's structure before writing a new one.

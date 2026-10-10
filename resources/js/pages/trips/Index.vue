@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Route } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import CatalogListLayout from '@/components/catalog/CatalogListLayout.vue';
+import MasterDetailPage from '@/components/catalog/MasterDetailPage.vue';
 import TripDetail from '@/components/catalog/TripDetail.vue';
 import TripFormSheet from '@/components/catalog/TripFormSheet.vue';
 import {
@@ -13,10 +14,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useFilteredList } from '@/composables/useFilteredList';
+import { t } from '@/lib/i18n';
 import { index, show } from '@/routes/trips';
 import type {
     Option,
     Paginated,
+    Team,
     Trip,
     TripDetail as TripDetailType,
 } from '@/types';
@@ -33,7 +36,11 @@ const props = defineProps<{
     stopTypes: Option[];
     stopStatuses: Option[];
     trip?: TripDetailType;
-    can: { manage: boolean; overrideCapacity: boolean };
+    can: {
+        manage: boolean;
+        overrideCapacity: boolean;
+        overrideCompliance: boolean;
+    };
 }>();
 
 const page = usePage();
@@ -54,93 +61,113 @@ const list = useFilteredList({
 
 const term = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? 'all');
+
+defineOptions({
+    layout: (pageProps: { currentTeam?: Team | null }) => ({
+        breadcrumbs: [
+            {
+                title: t('Trips'),
+                href: pageProps.currentTeam
+                    ? index.url({ current_team: pageProps.currentTeam.slug })
+                    : '/',
+            },
+        ],
+    }),
+});
 </script>
 
 <template>
     <Head :title="$t('Trips')" />
 
-    <div class="flex h-full min-h-0">
-        <CatalogListLayout
-            v-model="term"
-            :title="$t('Trips')"
-            :subtitle="$t(':count records', { count: trips.total })"
-            :description="
-                $t('Planned executions with assigned vehicles and drivers.')
-            "
-            :paginator="trips"
-            :placeholder="$t('Search by number')"
-            search-test="trip-search"
-            @search="list.search"
-        >
-            <template #actions>
-                <TripFormSheet v-if="can.manage" :team-slug="teamSlug" />
-            </template>
+    <MasterDetailPage
+        :selected="!!trip"
+        :back-href="index.url({ current_team: teamSlug })"
+    >
+        <template #list>
+            <CatalogListLayout
+                v-model="term"
+                :title="$t('Trips')"
+                :subtitle="$t(':count records', { count: trips.total })"
+                :description="
+                    $t('Planned executions with assigned vehicles and drivers.')
+                "
+                :paginator="trips"
+                :placeholder="$t('Search by number')"
+                search-test="trip-search"
+                @search="list.search"
+            >
+                <template #actions>
+                    <TripFormSheet v-if="can.manage" :team-slug="teamSlug" />
+                </template>
 
-            <template #filters>
-                <Select
-                    :model-value="status"
-                    @update:model-value="
-                        (value) => {
-                            status = String(value);
-                            list.filter(
-                                'status',
-                                status === 'all' ? null : status,
-                            );
-                        }
-                    "
-                >
-                    <SelectTrigger
-                        class="w-full"
-                        data-test="trip-status-filter"
+                <template #filters>
+                    <Select
+                        :model-value="status"
+                        @update:model-value="
+                            (value) => {
+                                status = String(value);
+                                list.filter(
+                                    'status',
+                                    status === 'all' ? null : status,
+                                );
+                            }
+                        "
                     >
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">{{ $t('All') }}</SelectItem>
-                        <SelectItem
-                            v-for="item in statuses"
-                            :key="item.value"
-                            :value="item.value"
+                        <SelectTrigger
+                            class="w-full"
+                            data-test="trip-status-filter"
                         >
-                            {{ item.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </template>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{{ $t('All') }}</SelectItem>
+                            <SelectItem
+                                v-for="item in statuses"
+                                :key="item.value"
+                                :value="item.value"
+                            >
+                                {{ item.label }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </template>
 
-            <li v-for="item in trips.data" :key="item.id">
-                <Link
-                    :href="show({ current_team: teamSlug, trip: item.id })"
-                    :class="[
-                        'flex items-start gap-3 border-b px-4 py-3 transition-colors',
-                        trip?.id === item.id
-                            ? 'bg-accent'
-                            : 'hover:bg-accent/40',
-                    ]"
-                    data-test="trip-row"
-                >
-                    <Route class="mt-0.5 size-4 shrink-0 opacity-50" />
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium">
-                            {{ item.number }}
-                        </p>
-                        <p class="truncate text-[11px] text-muted-foreground">
-                            {{ item.status_label }} ·
-                            {{ item.driver_name ?? $t('No driver') }}
-                            <template v-if="item.vehicle_name">
-                                · {{ item.vehicle_name }}
-                            </template>
-                        </p>
-                    </div>
-                </Link>
-            </li>
+                <li v-for="item in trips.data" :key="item.id">
+                    <Link
+                        :href="show({ current_team: teamSlug, trip: item.id })"
+                        :class="[
+                            'flex items-start gap-3 border-b px-4 py-3 transition-colors',
+                            trip?.id === item.id
+                                ? 'bg-accent'
+                                : 'hover:bg-accent/40',
+                        ]"
+                        data-test="trip-row"
+                    >
+                        <Route class="mt-0.5 size-4 shrink-0 opacity-50" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-medium">
+                                {{ item.number }}
+                            </p>
+                            <p
+                                class="truncate text-[11px] text-muted-foreground"
+                            >
+                                {{ item.status_label }} ·
+                                {{ item.driver_name ?? $t('No driver') }}
+                                <template v-if="item.vehicle_name">
+                                    · {{ item.vehicle_name }}
+                                </template>
+                            </p>
+                        </div>
+                    </Link>
+                </li>
 
-            <template #empty>
-                {{ $t('No trips match the filter.') }}
-            </template>
-        </CatalogListLayout>
+                <template #empty>
+                    {{ $t('No trips match the filter.') }}
+                </template>
+            </CatalogListLayout>
+        </template>
 
-        <section class="hidden min-h-0 flex-1 overflow-y-auto lg:block">
+        <template #detail>
             <TripDetail
                 v-if="trip"
                 :key="trip.id"
@@ -156,6 +183,7 @@ const status = ref(props.filters.status ?? 'all');
                 :stop-statuses="stopStatuses"
                 :can-manage="can.manage"
                 :can-override="can.overrideCapacity"
+                :can-override-compliance="can.overrideCompliance"
             />
 
             <div
@@ -164,6 +192,6 @@ const status = ref(props.filters.status ?? 'all');
             >
                 {{ $t('Pick a trip from the list or press ⌘K to search.') }}
             </div>
-        </section>
-    </div>
+        </template>
+    </MasterDetailPage>
 </template>

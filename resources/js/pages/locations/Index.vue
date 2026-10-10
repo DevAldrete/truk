@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import CatalogListLayout from '@/components/catalog/CatalogListLayout.vue';
 import LocationDetail from '@/components/catalog/LocationDetail.vue';
 import LocationFormSheet from '@/components/catalog/LocationFormSheet.vue';
+import MasterDetailPage from '@/components/catalog/MasterDetailPage.vue';
 import { useFilteredList } from '@/composables/useFilteredList';
 import { index, show } from '@/routes/locations';
 import type { Location, Option, Paginated } from '@/types';
@@ -42,64 +43,71 @@ const term = ref(props.filters.search ?? '');
 <template>
     <Head :title="$t('Locations')" />
 
-    <div class="flex h-full min-h-0">
-        <CatalogListLayout
-            v-model="term"
-            :title="$t('Locations')"
-            :subtitle="$t(':count sites', { count: locations.total })"
-            :description="$t('Pickup, delivery, and warehouse addresses.')"
-            :paginator="locations"
-            :placeholder="$t('Search by name, city, or zip')"
-            search-test="location-search"
-            @search="list.search"
-        >
-            <template #actions>
-                <LocationFormSheet
-                    v-if="can.manage"
-                    :team-slug="teamSlug"
-                    :parties="parties"
-                />
-            </template>
+    <MasterDetailPage
+        :selected="!!location"
+        :back-href="index.url({ current_team: teamSlug })"
+    >
+        <template #list>
+            <CatalogListLayout
+                v-model="term"
+                :title="$t('Locations')"
+                :subtitle="$t(':count sites', { count: locations.total })"
+                :description="$t('Pickup, delivery, and warehouse addresses.')"
+                :paginator="locations"
+                :placeholder="$t('Search by name, city, or zip')"
+                search-test="location-search"
+                @search="list.search"
+            >
+                <template #actions>
+                    <LocationFormSheet
+                        v-if="can.manage"
+                        :team-slug="teamSlug"
+                        :parties="parties"
+                    />
+                </template>
 
-            <li v-for="item in locations.data" :key="item.id">
-                <Link
-                    :href="show({ current_team: teamSlug, location: item.id })"
-                    :class="[
-                        'flex items-start gap-3 border-b px-4 py-3 transition-colors',
-                        location?.id === item.id
-                            ? 'bg-accent'
-                            : 'hover:bg-accent/40',
-                    ]"
-                    data-test="location-row"
-                >
-                    <MapPin class="mt-0.5 size-4 shrink-0 opacity-50" />
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium">
-                            {{ item.name }}
-                        </p>
-                        <p class="truncate text-xs text-muted-foreground">
-                            {{ item.street }}
-                            <template v-if="item.exterior_number">
-                                {{ item.exterior_number }}
-                            </template>
-                            · {{ item.city }}
-                        </p>
-                        <p
-                            v-if="item.party_name"
-                            class="truncate text-[11px] text-muted-foreground"
-                        >
-                            {{ item.party_name }}
-                        </p>
-                    </div>
-                </Link>
-            </li>
+                <li v-for="item in locations.data" :key="item.id">
+                    <Link
+                        :href="
+                            show({ current_team: teamSlug, location: item.id })
+                        "
+                        :class="[
+                            'flex items-start gap-3 border-b px-4 py-3 transition-colors',
+                            location?.id === item.id
+                                ? 'bg-accent'
+                                : 'hover:bg-accent/40',
+                        ]"
+                        data-test="location-row"
+                    >
+                        <MapPin class="mt-0.5 size-4 shrink-0 opacity-50" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-medium">
+                                {{ item.name }}
+                            </p>
+                            <p class="truncate text-xs text-muted-foreground">
+                                {{ item.street }}
+                                <template v-if="item.exterior_number">
+                                    {{ item.exterior_number }}
+                                </template>
+                                · {{ item.city }}
+                            </p>
+                            <p
+                                v-if="item.party_name"
+                                class="truncate text-[11px] text-muted-foreground"
+                            >
+                                {{ item.party_name }}
+                            </p>
+                        </div>
+                    </Link>
+                </li>
 
-            <template #empty>
-                {{ $t('No sites match the filter.') }}
-            </template>
-        </CatalogListLayout>
+                <template #empty>
+                    {{ $t('No sites match the filter.') }}
+                </template>
+            </CatalogListLayout>
+        </template>
 
-        <section class="hidden min-h-0 flex-1 overflow-y-auto lg:block">
+        <template #detail>
             <LocationDetail
                 v-if="location"
                 :key="location.id"
@@ -115,6 +123,6 @@ const term = ref(props.filters.search ?? '');
             >
                 {{ $t('Pick a site from the list or press ⌘K to search.') }}
             </div>
-        </section>
-    </div>
+        </template>
+    </MasterDetailPage>
 </template>

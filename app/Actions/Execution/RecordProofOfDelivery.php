@@ -6,6 +6,7 @@ use App\Models\ProofOfDelivery;
 use App\Models\Stop;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -28,25 +29,36 @@ class RecordProofOfDelivery
      */
     public function handle(Team $team, Stop $stop, array $data, ?User $user = null): ProofOfDelivery
     {
-        return DB::transaction(function () use ($team, $stop, $data, $user): ProofOfDelivery {
-            $existing = $team->proofsOfDelivery()
-                ->where('idempotency_key', $data['idempotency_key'])
-                ->first();
+        $existing = $team->proofsOfDelivery()
+            ->where('idempotency_key', $data['idempotency_key'])
+            ->first();
 
-            if ($existing !== null) {
-                return $existing;
-            }
+        if ($existing !== null) {
+            return $existing;
+        }
 
-            $base = 'teams/'.$team->id.'/pods/'.Str::uuid();
+        $base = 'teams/'.$team->id.'/pods/'.Str::uuid();
 
+        $signature = null;
+        $photos = [];
+        $documents = [];
+
+        try {
             $signature = isset($data['signature']) && $data['signature'] !== ''
                 ? $this->storeSignature($base, (string) $data['signature'])
                 : null;
 
             $photos = $this->storeUploads($base.'/photos', $data['photos'] ?? []);
             $documents = $this->storeUploads($base.'/documents', $data['documents'] ?? []);
+        } catch (\Throwable $exception) {
+            // Never leave orphaned evidence on the private disk if storing fails.
+            $this->deleteStored($signature, $photos, $documents);
 
-            return $team->proofsOfDelivery()->create([
+            throw $exception;
+        }
+
+        try {
+            return DB::transaction(fn (): ProofOfDelivery => $team->proofsOfDelivery()->create([
                 'delivery_attempt_id' => $data['delivery_attempt_id'] ?? null,
                 'stop_id' => $stop->id,
                 'shipment_id' => $data['shipment_id'] ?? null,
@@ -61,8 +73,35 @@ class RecordProofOfDelivery
                 'captured_at' => $data['captured_at'],
                 'idempotency_key' => $data['idempotency_key'],
                 'recorded_by' => $user?->id,
-            ]);
-        });
+            ]));
+        } catch (UniqueConstraintViolationException) {
+            // A concurrent retry already inserted the same key; drop the orphan
+            // files and replay the existing record.
+            $this->deleteStored($signature, $photos, $documents);
+
+            return $team->proofsOfDelivery()
+                ->where('idempotency_key', $data['idempotency_key'])
+                ->firstOrFail();
+        }
+    }
+
+    /**
+     * Remove stored evidence after a failed or raced handle.
+     *
+     * @param  array<int, string>  $photos
+     * @param  array<int, string>  $documents
+     */
+    protected function deleteStored(?string $signature, array $photos, array $documents): void
+    {
+        $paths = array_values(array_filter([
+            $signature,
+            ...$photos,
+            ...$documents,
+        ]));
+
+        if ($paths !== []) {
+            Storage::disk('evidence')->delete($paths);
+        }
     }
 
     /**

@@ -27,6 +27,7 @@ import {
     store as attachStopShipment,
 } from '@/routes/trips/stops/shipments';
 import { t } from '@/lib/i18n';
+import { show as showShipment } from '@/routes/shipments';
 import type { Option, TripDetail } from '@/types';
 
 const props = defineProps<{
@@ -42,6 +43,7 @@ const props = defineProps<{
     stopStatuses: Option[];
     canManage: boolean;
     canOverride: boolean;
+    canOverrideCompliance: boolean;
 }>();
 
 const timezones = [
@@ -72,6 +74,7 @@ const form = useForm({
     timezone: props.trip.timezone ?? 'America/Mexico_City',
     notes: props.trip.notes ?? '',
     capacity_override_reason: props.trip.capacity_override_reason ?? '',
+    compliance_override_reason: props.trip.compliance.override_reason ?? '',
 });
 
 const capacity = computed(() => props.trip.capacity);
@@ -507,6 +510,69 @@ const moveStop = (index: number, direction: number) => {
                 </p>
             </section>
 
+            <section
+                class="mt-6 rounded-lg border p-4"
+                :class="!trip.compliance.ok ? 'border-destructive/50' : ''"
+            >
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold">
+                        {{ $t('Compliance') }}
+                    </h3>
+                    <span
+                        v-if="!trip.compliance.ok"
+                        class="rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive"
+                    >
+                        {{ $t('Non-compliant') }}
+                    </span>
+                </div>
+
+                <ul
+                    v-if="trip.compliance.violations.length"
+                    class="mt-2 list-disc space-y-1 pl-5 text-xs text-destructive"
+                >
+                    <li
+                        v-for="(violation, index) in trip.compliance.violations"
+                        :key="index"
+                    >
+                        {{ violation.message }}
+                    </li>
+                </ul>
+                <p v-else class="mt-2 text-xs text-muted-foreground">
+                    {{ $t('All required documents are valid.') }}
+                </p>
+
+                <div
+                    v-if="!trip.compliance.ok && canOverrideCompliance"
+                    class="mt-3 grid gap-2"
+                >
+                    <Label for="trip-compliance-override">
+                        {{ $t('Override reason') }}
+                    </Label>
+                    <Textarea
+                        id="trip-compliance-override"
+                        v-model="form.compliance_override_reason"
+                        :disabled="!canManage"
+                    />
+                    <InputError
+                        :message="form.errors.compliance_override_reason"
+                    />
+                </div>
+                <p
+                    v-else-if="!trip.compliance.ok"
+                    class="mt-2 text-xs text-destructive"
+                >
+                    {{ $t('You cannot override compliance.') }}
+                </p>
+
+                <p
+                    v-if="trip.compliance.overridden_at"
+                    class="mt-2 text-xs text-muted-foreground"
+                >
+                    {{ $t('Overridden:') }}
+                    {{ trip.compliance.override_reason }}
+                </p>
+            </section>
+
             <section class="mt-6 rounded-lg border p-4">
                 <h3 class="text-sm font-semibold">{{ $t('Resources') }}</h3>
 
@@ -673,6 +739,24 @@ const moveStop = (index: number, direction: number) => {
                                 >
                                     {{ stop.location_name ?? $t('No site') }}
                                 </p>
+                                <p
+                                    v-if="stop.location_snapshot"
+                                    class="truncate text-[11px] text-muted-foreground"
+                                >
+                                    {{ stop.location_snapshot.street }}
+                                    <template
+                                        v-if="
+                                            stop.location_snapshot
+                                                .exterior_number
+                                        "
+                                    >
+                                        {{
+                                            stop.location_snapshot
+                                                .exterior_number
+                                        }}
+                                    </template>
+                                    · {{ stop.location_snapshot.city }}
+                                </p>
                             </div>
 
                             <div
@@ -717,7 +801,17 @@ const moveStop = (index: number, direction: number) => {
                                 :key="shipment.id"
                                 class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
                             >
-                                {{ shipment.number }}
+                                <Link
+                                    class="hover:underline"
+                                    :href="
+                                        showShipment({
+                                            current_team: teamSlug,
+                                            shipment: shipment.id,
+                                        })
+                                    "
+                                >
+                                    {{ shipment.number }}
+                                </Link>
                                 <button
                                     v-if="canManage"
                                     type="button"

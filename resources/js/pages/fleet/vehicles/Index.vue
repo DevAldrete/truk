@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Truck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import CatalogListLayout from '@/components/catalog/CatalogListLayout.vue';
+import MasterDetailPage from '@/components/catalog/MasterDetailPage.vue';
 import VehicleDetail from '@/components/catalog/VehicleDetail.vue';
 import VehicleFormSheet from '@/components/catalog/VehicleFormSheet.vue';
 import { useFilteredList } from '@/composables/useFilteredList';
@@ -40,66 +41,73 @@ const term = ref(props.filters.search ?? '');
 <template>
     <Head :title="$t('Vehicles')" />
 
-    <div class="flex h-full min-h-0">
-        <CatalogListLayout
-            v-model="term"
-            :title="$t('Vehicles')"
-            :subtitle="$t(':count vehicles', { count: vehicles.total })"
-            :description="$t('The tractor units that pull trailers.')"
-            :paginator="vehicles"
-            :placeholder="$t('Search by name, plate, or type')"
-            search-test="vehicle-search"
-            @search="list.search"
-        >
-            <template #actions>
-                <VehicleFormSheet
-                    v-if="can.manage"
-                    :team-slug="teamSlug"
-                    :carriers="carriers"
-                />
-            </template>
+    <MasterDetailPage
+        :selected="!!vehicle"
+        :back-href="index.url({ current_team: teamSlug })"
+    >
+        <template #list>
+            <CatalogListLayout
+                v-model="term"
+                :title="$t('Vehicles')"
+                :subtitle="$t(':count vehicles', { count: vehicles.total })"
+                :description="$t('The tractor units that pull trailers.')"
+                :paginator="vehicles"
+                :placeholder="$t('Search by name, plate, or type')"
+                search-test="vehicle-search"
+                @search="list.search"
+            >
+                <template #actions>
+                    <VehicleFormSheet
+                        v-if="can.manage"
+                        :team-slug="teamSlug"
+                        :carriers="carriers"
+                    />
+                </template>
 
-            <li v-for="item in vehicles.data" :key="item.id">
-                <Link
-                    :href="show({ current_team: teamSlug, vehicle: item.id })"
-                    :class="[
-                        'flex items-start gap-3 border-b px-4 py-3 transition-colors',
-                        vehicle?.id === item.id
-                            ? 'bg-accent'
-                            : 'hover:bg-accent/40',
-                    ]"
-                    data-test="vehicle-row"
-                >
-                    <Truck class="mt-0.5 size-4 shrink-0 opacity-50" />
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium">
-                            {{ item.name }}
-                        </p>
-                        <p class="truncate text-xs text-muted-foreground">
-                            {{ item.plate }} · {{ item.configuration }}
-                        </p>
-                        <p
-                            v-if="item.carrier_name"
-                            class="truncate text-[11px] text-muted-foreground"
-                        >
-                            {{ item.carrier_name }}
-                        </p>
-                    </div>
-                    <span
-                        v-if="item.has_expired_documents"
-                        class="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                <li v-for="item in vehicles.data" :key="item.id">
+                    <Link
+                        :href="
+                            show({ current_team: teamSlug, vehicle: item.id })
+                        "
+                        :class="[
+                            'flex items-start gap-3 border-b px-4 py-3 transition-colors',
+                            vehicle?.id === item.id
+                                ? 'bg-accent'
+                                : 'hover:bg-accent/40',
+                        ]"
+                        data-test="vehicle-row"
                     >
-                        {{ $t('Expired') }}
-                    </span>
-                </Link>
-            </li>
+                        <Truck class="mt-0.5 size-4 shrink-0 opacity-50" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-medium">
+                                {{ item.name }}
+                            </p>
+                            <p class="truncate text-xs text-muted-foreground">
+                                {{ item.plate }} · {{ item.configuration }}
+                            </p>
+                            <p
+                                v-if="item.carrier_name"
+                                class="truncate text-[11px] text-muted-foreground"
+                            >
+                                {{ item.carrier_name }}
+                            </p>
+                        </div>
+                        <span
+                            v-if="item.has_expired_documents"
+                            class="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                        >
+                            {{ $t('Expired') }}
+                        </span>
+                    </Link>
+                </li>
 
-            <template #empty>
-                {{ $t('No vehicles match the filter.') }}
-            </template>
-        </CatalogListLayout>
+                <template #empty>
+                    {{ $t('No vehicles match the filter.') }}
+                </template>
+            </CatalogListLayout>
+        </template>
 
-        <section class="hidden min-h-0 flex-1 overflow-y-auto lg:block">
+        <template #detail>
             <VehicleDetail
                 v-if="vehicle"
                 :key="vehicle.id"
@@ -116,6 +124,6 @@ const term = ref(props.filters.search ?? '');
             >
                 {{ $t('Pick a vehicle from the list or press ⌘K to search.') }}
             </div>
-        </section>
-    </div>
+        </template>
+    </MasterDetailPage>
 </template>

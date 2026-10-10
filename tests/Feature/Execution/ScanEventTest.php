@@ -46,6 +46,23 @@ test('scans move the package through the custody map', function () {
     $this->assertDatabaseHas('packages', ['id' => $package->id, 'status' => PackageStatus::Delivered->value]);
 });
 
+test('a package can be delivered without an in-transit scan', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    [$trip, $stop, $shipment, $package] = packageOnTrip($team);
+
+    foreach (['loaded', 'delivered'] as $type) {
+        $this->actingAs($user)->post(route('driver.trips.scans.store', [$team, $trip]), [
+            'package_id' => $package->id,
+            'type' => $type,
+            'idempotency_key' => (string) Str::uuid(),
+        ])->assertRedirect();
+    }
+
+    $this->assertDatabaseHas('packages', ['id' => $package->id, 'status' => PackageStatus::Delivered->value]);
+});
+
 test('out-of-order scans resolve by occurred_at', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();

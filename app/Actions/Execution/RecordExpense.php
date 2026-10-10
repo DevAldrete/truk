@@ -6,8 +6,10 @@ use App\Models\Expense;
 use App\Models\Team;
 use App\Models\Trip;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -25,16 +27,18 @@ class RecordExpense
      */
     public function handle(Team $team, Trip $trip, array $data, ?User $user = null): Expense
     {
-        return DB::transaction(function () use ($team, $trip, $data, $user): Expense {
-            $existing = $team->expenses()
-                ->where('idempotency_key', $data['idempotency_key'])
-                ->first();
+        $existing = $team->expenses()
+            ->where('idempotency_key', $data['idempotency_key'])
+            ->first();
 
-            if ($existing !== null) {
-                return $existing;
-            }
+        if ($existing !== null) {
+            return $existing;
+        }
 
-            return $team->expenses()->create([
+        $receiptPath = $this->storeReceipt($team, $data['receipt'] ?? null);
+
+        try {
+            return DB::transaction(fn (): Expense => $team->expenses()->create([
                 'trip_id' => $trip->id,
                 'stop_id' => $data['stop_id'] ?? null,
                 'driver_id' => $trip->driver_id,
@@ -48,11 +52,21 @@ class RecordExpense
                 'price_per_liter_minor' => $data['price_per_liter_minor'] ?? null,
                 'odometer_meters' => $data['odometer_meters'] ?? null,
                 'tank' => $data['tank'] ?? null,
-                'receipt_path' => $this->storeReceipt($team, $data['receipt'] ?? null),
+                'receipt_path' => $receiptPath,
                 'idempotency_key' => $data['idempotency_key'],
                 'recorded_by' => $user?->id,
-            ]);
-        });
+            ]));
+        } catch (UniqueConstraintViolationException) {
+            // A concurrent retry already inserted the same key; drop the orphan
+            // receipt and replay the existing record.
+            if ($receiptPath !== null) {
+                Storage::disk('evidence')->delete($receiptPath);
+            }
+
+            return $team->expenses()
+                ->where('idempotency_key', $data['idempotency_key'])
+                ->firstOrFail();
+        }
     }
 
     /**

@@ -27,6 +27,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $location_id
  * @property array<string, mixed>|null $location_snapshot
  * @property Carbon|null $planned_at
+ * @property Carbon|null $actual_arrival_at
+ * @property Carbon|null $actual_departure_at
  * @property StopStatus $status
  * @property string|null $notes
  * @property Carbon|null $created_at
@@ -50,6 +52,8 @@ use Illuminate\Support\Carbon;
     'location_id',
     'location_snapshot',
     'planned_at',
+    'actual_arrival_at',
+    'actual_departure_at',
     'status',
     'notes',
 ])]
@@ -165,6 +169,8 @@ class Stop extends Model
             'status' => StopStatus::class,
             'location_snapshot' => 'array',
             'planned_at' => 'datetime',
+            'actual_arrival_at' => 'datetime',
+            'actual_departure_at' => 'datetime',
         ];
     }
 }

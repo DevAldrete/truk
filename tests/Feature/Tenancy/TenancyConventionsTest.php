@@ -3,7 +3,18 @@
 use App\Concerns\BelongsToTeam;
 
 test('every model is scoped to a team unless it is tenant independent', function () {
-    $tenantIndependent = ['Membership', 'Team', 'TeamInvitation', 'User'];
+    $tenantIndependent = [
+        'Membership',
+        'Team',
+        'TeamInvitation',
+        'User',
+        // Global, versioned reference catalogs: never tenant data.
+        'CatalogVersion',
+        'SatProductServiceCode',
+        'SatUnitCode',
+        'SatPostalCode',
+        'TollBooth',
+    ];
 
     $models = collect(glob(app_path('Models/*.php')))
         ->map(fn (string $path) => pathinfo($path, PATHINFO_FILENAME))

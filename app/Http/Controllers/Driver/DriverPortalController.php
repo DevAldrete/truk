@@ -10,6 +10,7 @@ use App\Enums\IncidentType;
 use App\Enums\PackageStatus;
 use App\Enums\ScanType;
 use App\Enums\StopType;
+use App\Enums\TeamPermission;
 use App\Enums\TripStatus;
 use App\Http\Controllers\Concerns\AuthorizesTripExecution;
 use App\Http\Controllers\Controller;
@@ -43,6 +44,7 @@ class DriverPortalController extends Controller
         Gate::authorize('executeOperations', $current_team);
 
         $driver = $request->user()->driverProfileFor($current_team);
+        $canManage = $request->user()->hasTeamPermission($current_team, TeamPermission::ManageOperations);
 
         $trips = Trip::query()
             ->whereIn('status', [
@@ -50,7 +52,12 @@ class DriverPortalController extends Controller
                 TripStatus::Dispatched->value,
                 TripStatus::InTransit->value,
             ])
-            ->when($driver !== null, fn ($query) => $query->where('driver_id', $driver->id))
+            ->when(
+                $driver !== null,
+                fn ($query) => $query->where('driver_id', $driver->id),
+                // A driver without a linked profile sees nothing; a planner sees all.
+                fn ($query) => $canManage ? $query : $query->whereRaw('1 = 0'),
+            )
             ->with(['vehicle:id,name,plate', 'trailer:id,name,plate'])
             ->withCount('stops')
             ->orderBy('planned_start_at')

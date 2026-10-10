@@ -182,6 +182,10 @@ export type OrderShipmentRef = {
     status: string;
     status_label: string;
     pieces: number;
+    load_id: number | null;
+    load_number: string | null;
+    delivered_quantity: number;
+    remaining_quantity: number;
 };
 
 export type OrderTotals = {
@@ -224,6 +228,8 @@ export type Shipment = {
     customer_name: string | null;
     order_id: number | null;
     order_number: string | null;
+    load_id: number | null;
+    load_number: string | null;
     pickup_location_id: number | null;
     delivery_location_id: number | null;
     pickup_snapshot: LocationSnapshot | null;
@@ -258,6 +264,8 @@ export type ShipmentPackage = {
 
 export type ShipmentDetail = Shipment & {
     package_limit: number;
+    trip_id: number | null;
+    trip_number: string | null;
     items: ShipmentItem[];
     packages: ShipmentPackage[];
 };
@@ -297,7 +305,15 @@ export type LoadTotals = {
 
 export type LoadDetail = Load & {
     shipments: LoadShipmentRef[];
+    trips: LoadTripRef[];
     totals: LoadTotals;
+};
+
+export type LoadTripRef = {
+    id: number;
+    number: string;
+    status: string;
+    status_label: string;
 };
 
 export type TripStatus =
@@ -346,12 +362,28 @@ export type TripCapacity = {
     over: boolean;
 };
 
+export type TripComplianceViolation = {
+    resource: string;
+    name: string;
+    document: string;
+    expires_at: string;
+    message: string;
+};
+
+export type TripCompliance = {
+    ok: boolean;
+    violations: TripComplianceViolation[];
+    override_reason?: string | null;
+    overridden_at?: string | null;
+};
+
 export type TripDetail = Trip & {
     assignments: TripAssignmentRef[];
     stops: StopRef[];
     capacity: TripCapacity;
     capacity_override_reason: string | null;
     capacity_overridden_at: string | null;
+    compliance: TripCompliance;
 };
 
 export type DispatchShipmentRef = {
@@ -373,6 +405,7 @@ export type DispatchTrip = {
     trailer_id: number | null;
     trailer_name: string | null;
     capacity: TripCapacity;
+    compliance: TripCompliance;
     shipments: DispatchShipmentRef[];
 };
 
@@ -430,4 +463,52 @@ export type SearchResult = {
     title: string;
     subtitle: string;
     url: string;
+};
+
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export type IncidentStatus =
+    | 'open'
+    | 'investigating'
+    | 'resolved'
+    | 'dismissed';
+
+export type IncidentType =
+    | 'delay'
+    | 'accident'
+    | 'breakdown'
+    | 'damage'
+    | 'theft'
+    | 'documentation'
+    | 'customer'
+    | 'other';
+
+export type Incident = {
+    id: number;
+    type: IncidentType;
+    type_label: string;
+    severity: IncidentSeverity;
+    severity_label: string;
+    status: IncidentStatus;
+    status_label: string;
+    description: string;
+    occurred_at: string;
+    age_hours: number;
+    trip_id: number | null;
+    trip_number: string | null;
+    shipment_id: number | null;
+    shipment_number: string | null;
+    driver_name: string | null;
+    resolution: string | null;
+    resolved_at: string | null;
+    resolved_by_name: string | null;
+};
+
+export type IncidentDetail = Incident;
+
+export type DashboardOperations = {
+    dispatching_today: number;
+    delayed_stops: number;
+    open_incidents: number;
+    unassigned_shipments: number;
 };

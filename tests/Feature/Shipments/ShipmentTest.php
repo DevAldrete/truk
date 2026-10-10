@@ -2,9 +2,13 @@
 
 use App\Enums\ShipmentStatus;
 use App\Enums\TeamRole;
+use App\Models\Load;
 use App\Models\Location;
 use App\Models\Shipment;
+use App\Models\Stop;
+use App\Models\StopShipment;
 use App\Models\Team;
+use App\Models\Trip;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -23,6 +27,25 @@ test('the shipment board lists the shipments of the current team', function () {
             ->component('shipments/Index')
             ->has('shipments.data', 1)
             ->where('shipments.data.0.number', 'SHP-00001'));
+});
+
+test('a shipment detail links to its load and serving trip', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    $load = Load::factory()->for($team)->create(['number' => 'LOAD-00042']);
+    $shipment = Shipment::factory()->for($team)->create(['load_id' => $load->id]);
+    $trip = Trip::factory()->for($team)->create(['number' => 'TRP-00042']);
+    $stop = Stop::factory()->for($team)->for($trip)->create();
+    StopShipment::factory()->for($team)->for($stop)->for($shipment)->create();
+
+    $this->actingAs($user)
+        ->get(route('shipments.show', [$team, $shipment]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('shipment.load_number', 'LOAD-00042')
+            ->where('shipment.trip_number', 'TRP-00042'));
 });
 
 test('changing the delivery site refreshes the address snapshot', function () {

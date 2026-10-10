@@ -15,6 +15,7 @@ use App\Models\Team;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -63,7 +64,19 @@ class OrderController extends Controller
     {
         Gate::authorize('manageOperations', $current_team);
 
-        $saveOrder->update($current_team, $order, $request->validated());
+        $data = $request->validated();
+
+        if ($data['status'] !== $order->status->value) {
+            $target = OrderStatus::from($data['status']);
+
+            if (! $order->status->canTransitionTo($target)) {
+                throw ValidationException::withMessages([
+                    'status' => __('That status change is not allowed.'),
+                ]);
+            }
+        }
+
+        $saveOrder->update($current_team, $order, $data);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name was updated.', ['name' => $order->number])]);
 
@@ -168,7 +181,10 @@ class OrderController extends Controller
     {
         $order->load([
             'items' => fn ($query) => $query->orderBy('id'),
-            'shipments' => fn ($query) => $query->orderBy('id'),
+            'shipments' => fn ($query) => $query
+                ->with('loadGroup:id,number')
+                ->withSum(['deliveryAttemptLines as delivered_quantity' => fn ($query) => $query->where('success', true)], 'quantity')
+                ->orderBy('id'),
         ]);
 
         return [
@@ -195,6 +211,10 @@ class OrderController extends Controller
                     'status' => $shipment->status->value,
                     'status_label' => $shipment->status->label(),
                     'pieces' => $shipment->pieces,
+                    'load_id' => $shipment->load_id,
+                    'load_number' => $shipment->loadGroup?->number,
+                    'delivered_quantity' => (int) $shipment->getAttribute('delivered_quantity'),
+                    'remaining_quantity' => max((int) $shipment->pieces - (int) $shipment->getAttribute('delivered_quantity'), 0),
                 ])
                 ->all(),
             'totals' => [

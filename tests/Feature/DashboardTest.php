@@ -1,10 +1,18 @@
 <?php
 
+use App\Enums\IncidentStatus;
+use App\Enums\ShipmentStatus;
+use App\Enums\StopStatus;
 use App\Enums\TeamRole;
+use App\Enums\TripStatus;
 use App\Models\ComplianceDocument;
 use App\Models\Driver;
+use App\Models\Incident;
+use App\Models\Shipment;
+use App\Models\Stop;
 use App\Models\Team;
 use App\Models\TeamInvitation;
+use App\Models\Trip;
 use App\Models\User;
 use App\Models\Vehicle;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -162,4 +170,31 @@ test('dashboard reports fleet warnings for the current team', function () {
             ->where('fleetWarnings.expired_licenses', 1)
             ->where('fleetWarnings.expired_documents', 1)
             ->where('fleetWarnings.expiring_documents', 1));
+});
+
+test('dashboard reports operations for the current team', function () {
+    $user = User::factory()->create();
+    $team = $user->currentTeam;
+
+    $trip = Trip::factory()->for($team)->create([
+        'status' => TripStatus::Dispatched->value,
+        'planned_start_at' => now(),
+    ]);
+
+    Stop::factory()->for($team)->for($trip)->create([
+        'status' => StopStatus::Pending->value,
+        'planned_at' => now()->subHour(),
+    ]);
+
+    Incident::factory()->for($team)->create(['status' => IncidentStatus::Open->value]);
+    Shipment::factory()->for($team)->create(['status' => ShipmentStatus::Planned->value]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->where('operations.dispatching_today', 1)
+            ->where('operations.delayed_stops', 1)
+            ->where('operations.open_incidents', 1)
+            ->where('operations.unassigned_shipments', 1));
 });

@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Models\Trailer;
 use App\Models\Trip;
 use App\Models\Vehicle;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -51,7 +52,7 @@ class AssignTripResources
                 if ($newId !== null) {
                     $class::query()->whereKey($newId)->lockForUpdate()->first();
 
-                    $this->assertAvailable($trip, $column, $newId);
+                    $this->assertAvailable($trip, $column, $newId, $trip->planned_start_at, $trip->planned_end_at);
                 }
 
                 if ($oldId !== null) {
@@ -83,9 +84,9 @@ class AssignTripResources
     /**
      * Ensure the resource is not already on an overlapping open trip.
      */
-    protected function assertAvailable(Trip $trip, string $column, int $resourceId): void
+    protected function assertAvailable(Trip $trip, string $column, int $resourceId, ?CarbonInterface $start, ?CarbonInterface $end): void
     {
-        if ($trip->planned_start_at === null || $trip->planned_end_at === null) {
+        if ($start === null || $end === null) {
             return;
         }
 
@@ -98,14 +99,31 @@ class AssignTripResources
             ->whereKeyNot($trip->id)
             ->where($column, $resourceId)
             ->whereIn('status', $openStatuses)
-            ->where('planned_start_at', '<', $trip->planned_end_at)
-            ->where('planned_end_at', '>', $trip->planned_start_at)
+            ->where('planned_start_at', '<', $end)
+            ->where('planned_end_at', '>', $start)
             ->exists();
 
         if ($conflict) {
             throw ValidationException::withMessages([
                 $column => __('That resource is already assigned to an overlapping trip.'),
             ]);
+        }
+    }
+
+    /**
+     * Re-check every assigned resource against a proposed time window.
+     *
+     * Used when a trip's planned window is edited rather than its resources, so
+     * a reschedule cannot silently create an overlapping booking.
+     */
+    public function assertResourcesWithin(Trip $trip, ?CarbonInterface $start, ?CarbonInterface $end): void
+    {
+        foreach (array_keys($this->resources) as $column) {
+            $id = $trip->getAttribute($column);
+
+            if ($id !== null) {
+                $this->assertAvailable($trip, $column, (int) $id, $start, $end);
+            }
         }
     }
 }

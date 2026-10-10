@@ -12,6 +12,10 @@ return [
     'toll' => 'Toll',
     'lodging' => 'Lodging',
     'maintenance' => 'Maintenance',
+    'viaticos' => 'Per diem',
+    'maniobras' => 'Handling',
+    'fines' => 'Fines',
+    'detention' => 'Detention',
     'misc' => 'Miscellaneous',
 
 ];

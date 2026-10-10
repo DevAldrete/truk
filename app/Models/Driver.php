@@ -24,7 +24,10 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $phone
  * @property string|null $license_number
+ * @property string|null $curp
+ * @property string|null $license_type
  * @property Carbon|null $license_expires_at
+ * @property Carbon|null $medical_exam_expires_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -33,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $user
  * @property-read Team $team
  */
-#[Fillable(['user_id', 'carrier_party_id', 'name', 'phone', 'license_number', 'license_expires_at'])]
+#[Fillable(['user_id', 'carrier_party_id', 'name', 'phone', 'license_number', 'curp', 'license_type', 'license_expires_at', 'medical_exam_expires_at'])]
 class Driver extends Model
 {
     /** @use HasFactory<DriverFactory> */
@@ -98,6 +101,7 @@ class Driver extends Model
     {
         return [
             'license_expires_at' => 'date',
+            'medical_exam_expires_at' => 'date',
         ];
     }
 }

@@ -324,7 +324,13 @@ const totalVolumeM3 = computed(() => props.order.totals.volume_cm3 / 1000000);
                             {{ shipment.number }}
                         </Link>
                         <span class="text-xs text-muted-foreground">
-                            {{ shipment.status_label }} · {{ shipment.pieces }}
+                            {{ shipment.status_label }}
+                            <template v-if="shipment.load_number">
+                                · {{ shipment.load_number }}
+                            </template>
+                            · {{ shipment.delivered_quantity }}/{{
+                                shipment.pieces
+                            }}
                             {{ $t('pcs') }}
                         </span>
                     </li>
