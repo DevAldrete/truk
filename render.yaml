@@ -12,7 +12,7 @@ databases:
       # Free Postgres is perfect for a demo but is removed after 30 days. Upgrade
       # to a paid plan for anything longer-lived.
       plan: free
-      postgresMajorVersion: '16'
+      postgresMajorVersion: "16"
       region: oregon
 
 services:
@@ -32,7 +32,7 @@ services:
           - key: APP_ENV
             value: production
           - key: APP_DEBUG
-            value: 'false'
+            value: "false"
           # Generate with `php artisan key:generate --show`, then paste the value.
           - key: APP_KEY
             sync: false
@@ -44,10 +44,10 @@ services:
             value: warning
           # Run migrations automatically on each boot.
           - key: RUN_MIGRATIONS
-            value: 'true'
+            value: "true"
           # The image ships a client-side build only; there is no SSR server.
           - key: INERTIA_SSR_ENABLED
-            value: 'false'
+            value: "false"
           - key: DB_CONNECTION
             value: pgsql
           - key: DB_HOST
