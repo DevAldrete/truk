@@ -107,7 +107,7 @@ class LoadController extends Controller
         $status = $request->query('status');
 
         return [
-            'loads' => Load::query()
+            'loads' => Inertia::scroll(Load::query()
                 ->withCount('shipments')
                 ->when($search, fn ($query, string $search) => $query->whereRaw('LOWER(number) LIKE ?', ['%'.mb_strtolower($search).'%']))
                 ->when(
@@ -117,7 +117,7 @@ class LoadController extends Controller
                 ->latest()
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Load $load) => $this->summary($load)),
+                ->through(fn (Load $load) => $this->summary($load))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, LoadStatus::values(), true) ? $status : null,

@@ -1,0 +1,37 @@
+# Keep the build context small and the image deterministic.
+
+.git
+.github
+.gitignore
+.gitattributes
+
+# Never bake local secrets or environment files into the image.
+.env
+.env.*
+!.env.example
+
+# Dependencies are installed inside the build stage, not copied in.
+vendor
+node_modules
+
+# Build output is produced during the image build.
+public/build
+public/hot
+bootstrap/ssr
+bootstrap/cache/*.php
+
+# Local runtime state.
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/evidence/*
+storage/app/private/*
+
+# Editor / tooling noise.
+.vscode
+.idea
+.pi
+*.log
+npm-debug.log*
+.DS_Store

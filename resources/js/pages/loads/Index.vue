@@ -75,6 +75,7 @@ defineOptions({
     >
         <template #list>
             <CatalogListLayout
+                data="loads"
                 v-model="term"
                 :title="$t('Loads')"
                 :subtitle="$t(':count records', { count: loads.total })"

@@ -108,7 +108,7 @@ class OrderController extends Controller
         $status = $request->query('status');
 
         return [
-            'orders' => Order::query()
+            'orders' => Inertia::scroll(Order::query()
                 ->with('customerParty:id,name')
                 ->withCount(['items', 'shipments'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
@@ -121,7 +121,7 @@ class OrderController extends Controller
                 ->latest()
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Order $order) => $this->summary($order)),
+                ->through(fn (Order $order) => $this->summary($order))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, OrderStatus::values(), true) ? $status : null,

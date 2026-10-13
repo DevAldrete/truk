@@ -104,6 +104,7 @@ const ageLabel = (hours: number) => {
     >
         <template #list>
             <CatalogListLayout
+                data="incidents"
                 v-model="term"
                 :title="$t('Incidents')"
                 :subtitle="$t(':count open', { count: counts.open })"

@@ -12,6 +12,7 @@ type Filters = Record<string, string | null>;
 export function useFilteredList(options: {
     url: string | (() => string);
     only: string[];
+    reset?: string[];
     filters: Filters;
     delay?: number;
 }) {
@@ -31,6 +32,9 @@ export function useFilteredList(options: {
 
         router.get(url, query, {
             only: options.only,
+            // Reset the paginated prop so the infinite list starts from page 1
+            // instead of appending the new results to the previous ones.
+            reset: options.reset ?? options.only,
             preserveState: true,
             preserveScroll: true,
             replace: true,

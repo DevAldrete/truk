@@ -49,6 +49,7 @@ const term = ref(props.filters.search ?? '');
     >
         <template #list>
             <CatalogListLayout
+                data="locations"
                 v-model="term"
                 :title="$t('Locations')"
                 :subtitle="$t(':count sites', { count: locations.total })"

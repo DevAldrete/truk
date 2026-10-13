@@ -93,7 +93,7 @@ class PartyController extends Controller
         $type = $request->query('type');
 
         return [
-            'parties' => Party::query()
+            'parties' => Inertia::scroll(Party::query()
                 ->withCount(['contacts', 'locations'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -106,7 +106,7 @@ class PartyController extends Controller
                 ->orderBy('name')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Party $party) => $this->summary($party)),
+                ->through(fn (Party $party) => $this->summary($party))),
             'filters' => [
                 'search' => $search,
                 'type' => is_string($type) && in_array($type, PartyType::values(), true) ? $type : null,

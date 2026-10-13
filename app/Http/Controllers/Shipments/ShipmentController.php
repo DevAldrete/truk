@@ -93,7 +93,7 @@ class ShipmentController extends Controller
         $status = $request->query('status');
 
         return [
-            'shipments' => Shipment::query()
+            'shipments' => Inertia::scroll(Shipment::query()
                 ->with(['order:id,number', 'loadGroup:id,number'])
                 ->withCount(['items', 'packages'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
@@ -106,7 +106,7 @@ class ShipmentController extends Controller
                 ->latest()
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Shipment $shipment) => $this->summary($shipment)),
+                ->through(fn (Shipment $shipment) => $this->summary($shipment))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, ShipmentStatus::values(), true) ? $status : null,

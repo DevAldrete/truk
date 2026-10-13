@@ -141,7 +141,7 @@ class TripController extends Controller
         $status = $request->query('status');
 
         return [
-            'trips' => Trip::query()
+            'trips' => Inertia::scroll(Trip::query()
                 ->with(['driver:id,name', 'vehicle:id,name', 'trailer:id,name'])
                 ->when($search, fn ($query, string $search) => $query->whereRaw('LOWER(number) LIKE ?', ['%'.mb_strtolower($search).'%']))
                 ->when(
@@ -151,7 +151,7 @@ class TripController extends Controller
                 ->orderByDesc('planned_start_at')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Trip $trip) => $this->summary($trip)),
+                ->through(fn (Trip $trip) => $this->summary($trip))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, TripStatus::values(), true) ? $status : null,

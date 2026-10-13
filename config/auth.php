@@ -75,6 +75,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    |
+    | When disabled, an account is considered verified from the moment it
+    | exists: registrations are marked verified on creation and the `verified`
+    | middleware never blocks an authenticated user. Set to true to require
+    | users to confirm their email address before using the application.
+    |
+    */
+
+    'email_verification_required' => (bool) env('AUTH_REQUIRE_EMAIL_VERIFICATION', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Resetting Passwords
     |--------------------------------------------------------------------------
     |

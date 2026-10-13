@@ -5,6 +5,12 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 
+beforeEach(function () {
+    // These tests exercise the verification flow itself, so opt back in to the
+    // requirement that is disabled by default.
+    config(['auth.email_verification_required' => true]);
+});
+
 test('email verification screen can be rendered', function () {
     $user = User::factory()->unverified()->create();
 

@@ -109,7 +109,7 @@ class TrailerController extends Controller
         $search = $request->string('search')->trim()->value() ?: null;
 
         return [
-            'trailers' => Trailer::query()
+            'trailers' => Inertia::scroll(Trailer::query()
                 ->with(['carrierParty:id,name', 'documents'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -118,7 +118,7 @@ class TrailerController extends Controller
                 ->orderBy('name')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Trailer $trailer) => $this->summary($trailer)),
+                ->through(fn (Trailer $trailer) => $this->summary($trailer))),
             'filters' => [
                 'search' => $search,
             ],

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { InfiniteScroll } from '@inertiajs/vue3';
 import { Search } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import type { Paginated } from '@/types';
 
 defineProps<{
@@ -10,6 +11,12 @@ defineProps<{
     subtitle: string;
     description?: string;
     paginator: Paginated<unknown>;
+    /**
+     * Name of the page prop that holds this paginator (e.g. "parties"). The
+     * server wraps that prop in `Inertia::scroll()`, which is what lets the
+     * InfiniteScroll component page through it.
+     */
+    data: string;
     modelValue: string;
     placeholder: string;
     searchTest?: string;
@@ -69,7 +76,13 @@ const onInput = (value: string | number) => {
             <slot name="filters" />
         </div>
 
-        <ul class="min-h-0 flex-1 overflow-y-auto">
+        <InfiniteScroll
+            :data="data"
+            only-next
+            manual
+            as="ul"
+            class="min-h-0 flex-1 overflow-y-auto"
+        >
             <slot />
 
             <li
@@ -78,42 +91,37 @@ const onInput = (value: string | number) => {
             >
                 <slot name="empty" />
             </li>
-        </ul>
 
-        <footer
-            v-if="paginator.last_page > 1"
-            class="flex items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground"
-        >
-            <span
-                >{{ paginator.from }}–{{ paginator.to }} /
-                {{ paginator.total }}</span
-            >
-            <div class="flex gap-1">
-                <Button
-                    v-for="link in paginator.links.filter(
-                        (l) =>
-                            l.label === '&laquo; Previous' ||
-                            l.label === 'Next &raquo;',
-                    )"
-                    :key="link.label"
-                    as-child
-                    variant="ghost"
-                    size="sm"
-                    :disabled="!link.url"
+            <template #next="{ loading, hasMore, fetch }">
+                <div
+                    v-if="paginator.data.length > 0"
+                    class="flex items-center justify-between gap-2 border-t px-3 py-2 text-xs text-muted-foreground"
                 >
-                    <Link
-                        v-if="link.url"
-                        :href="link.url"
-                        preserve-scroll
-                        preserve-state
-                    >
-                        {{ link.label.includes('Previous') ? '‹' : '›' }}
-                    </Link>
-                    <span v-else>
-                        {{ link.label.includes('Previous') ? '‹' : '›' }}
+                    <span data-test="list-count">
+                        {{
+                            $t('Showing :loaded of :total', {
+                                loaded: paginator.data.length,
+                                total: paginator.total,
+                            })
+                        }}
                     </span>
-                </Button>
-            </div>
-        </footer>
+
+                    <Button
+                        v-if="hasMore"
+                        size="sm"
+                        variant="outline"
+                        :disabled="loading"
+                        data-test="load-more"
+                        @click="fetch"
+                    >
+                        <Spinner v-if="loading" />
+                        {{ loading ? $t('Loading…') : $t('Load more') }}
+                    </Button>
+                    <span v-else data-test="list-end">
+                        {{ $t('End of list') }}
+                    </span>
+                </div>
+            </template>
+        </InfiniteScroll>
     </section>
 </template>

@@ -75,7 +75,7 @@ class IncidentController extends Controller
         $severity = $request->query('severity');
 
         return [
-            'incidents' => Incident::query()
+            'incidents' => Inertia::scroll(Incident::query()
                 ->with(['trip:id,number', 'shipment:id,number', 'driver:id,name', 'resolver:id,name'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(description) LIKE ?', ['%'.mb_strtolower($search).'%'])))
@@ -90,7 +90,7 @@ class IncidentController extends Controller
                 ->orderByDesc('occurred_at')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Incident $incident) => $this->summary($incident)),
+                ->through(fn (Incident $incident) => $this->summary($incident))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, IncidentStatus::values(), true) ? $status : null,
