@@ -89,4 +89,8 @@ RUN mkdir -p \
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
 
+# Render sets $PORT (default 10000); the entrypoint binds nginx to it. EXPOSE is
+# purely informational, but helps platforms auto-detect the port.
+EXPOSE 10000
+
 ENTRYPOINT ["entrypoint"]

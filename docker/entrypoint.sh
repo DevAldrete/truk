@@ -17,6 +17,12 @@ if [ -z "${APP_KEY:-}" ]; then
     exit 1
 fi
 
+# If a command was passed (a Render one-off "Docker Command" or
+# `docker run <image> php artisan ...`), run it instead of the web server.
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 # Render the nginx site config with the runtime port substituted in.
 envsubst '${PORT}' \
     < /etc/nginx/templates/default.conf.template \
@@ -36,9 +42,21 @@ chown -R www-data:www-data storage bootstrap/cache
 # Cache configuration, routes, and views now that the environment is available.
 php artisan optimize --no-interaction
 
-# Optionally migrate on boot. Enabled on the web service in render.yaml.
+# Optionally migrate on boot. Enabled on the web service via RUN_MIGRATIONS=true.
 if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
     php artisan migrate --force --no-interaction
+fi
+
+# Optionally seed the demo dataset on boot. Guarded by an emptiness check so a
+# redeploy never duplicates data: it only seeds when there are no users yet.
+if [ "${RUN_SEED:-false}" = "true" ]; then
+    users=$(php artisan tinker --execute='echo \App\Models\User::query()->count();' 2>/dev/null | tr -dc '0-9')
+
+    if [ -z "$users" ] || [ "$users" = "0" ]; then
+        php artisan db:seed --force --no-interaction
+    else
+        echo "RUN_SEED=true but the database already has ${users} user(s); skipping seed."
+    fi
 fi
 
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
