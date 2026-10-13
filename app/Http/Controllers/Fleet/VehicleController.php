@@ -109,7 +109,7 @@ class VehicleController extends Controller
         $search = $request->string('search')->trim()->value() ?: null;
 
         return [
-            'vehicles' => Vehicle::query()
+            'vehicles' => Inertia::scroll(Vehicle::query()
                 ->with(['carrierParty:id,name', 'documents'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -118,7 +118,7 @@ class VehicleController extends Controller
                 ->orderBy('name')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Vehicle $vehicle) => $this->summary($vehicle)),
+                ->through(fn (Vehicle $vehicle) => $this->summary($vehicle))),
             'filters' => [
                 'search' => $search,
             ],

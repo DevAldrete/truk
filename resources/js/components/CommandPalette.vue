@@ -4,13 +4,16 @@ import {
     BookOpen,
     Building2,
     ClipboardList,
+    Container,
     Layers,
     LayoutGrid,
     MapPin,
+    Navigation,
     Package,
     Route,
     Search,
     Settings,
+    TriangleAlert,
     Truck,
     Users,
     Waypoints,
@@ -26,11 +29,14 @@ import { Input } from '@/components/ui/input';
 import { t } from '@/lib/i18n';
 import { dashboard, dispatch, help, search as searchRoute } from '@/routes';
 import { index as driversIndex } from '@/routes/drivers';
+import { index as driverIndex } from '@/routes/driver';
+import { index as incidentsIndex } from '@/routes/incidents';
 import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
 import { index as ordersIndex } from '@/routes/orders';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as shipmentsIndex } from '@/routes/shipments';
+import { index as trailersIndex } from '@/routes/trailers';
 import { index as tripsIndex } from '@/routes/trips';
 import { index as vehiclesIndex } from '@/routes/vehicles';
 import type { SearchResult } from '@/types';
@@ -101,6 +107,24 @@ const commands = computed<Item[]>(() => [
         label: t('Trips'),
         icon: Route,
         url: tripsIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'incidents',
+        label: t('Incidents'),
+        icon: TriangleAlert,
+        url: incidentsIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'driver-portal',
+        label: t('Driver portal'),
+        icon: Navigation,
+        url: driverIndex.url({ current_team: props.teamSlug }),
+    },
+    {
+        key: 'trailers',
+        label: t('Trailers'),
+        icon: Container,
+        url: trailersIndex.url({ current_team: props.teamSlug }),
     },
     {
         key: 'drivers',

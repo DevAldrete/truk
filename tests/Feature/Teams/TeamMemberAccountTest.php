@@ -89,3 +89,27 @@ test('a dispatcher cannot create a staff account', function () {
         ])
         ->assertForbidden();
 });
+
+test('a removed staff account without a personal team is handled', function () {
+    $owner = User::factory()->create();
+    $team = Team::factory()->create(['name' => 'Acme', 'slug' => 'acme']);
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+    $this->actingAs($owner)->post(route('teams.members.store', $team), [
+        'name' => 'Juan Pérez',
+        'username' => 'juan',
+        'password' => 'secret123',
+        'role' => TeamRole::Dispatcher->value,
+    ]);
+
+    $staff = User::query()->where('username', 'acme/juan')->sole();
+    expect($staff->personalTeam())->toBeNull();
+
+    $staff->update(['current_team_id' => $team->id]);
+
+    $this->actingAs($owner)
+        ->delete(route('teams.members.destroy', [$team, $staff]))
+        ->assertRedirect(route('teams.edit', $team));
+
+    expect($staff->fresh()->current_team_id)->toBeNull();
+});

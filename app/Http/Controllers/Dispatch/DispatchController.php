@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Dispatch;
 
+use App\Actions\Trips\AssertTripCompliance;
 use App\Actions\Trips\ComputeTripCapacity;
+use App\Enums\ShipmentStatus;
 use App\Enums\TeamPermission;
 use App\Enums\TripStatus;
 use App\Http\Controllers\Controller;
@@ -21,7 +23,7 @@ class DispatchController extends Controller
      * Display the dispatch board: open trips on one side, unassigned
      * shipments on the other, with live capacity and conflicts.
      */
-    public function __invoke(Request $request, Team $current_team, ComputeTripCapacity $capacity): Response
+    public function __invoke(Request $request, Team $current_team, ComputeTripCapacity $capacity, AssertTripCompliance $compliance): Response
     {
         $openStatuses = [
             TripStatus::Planned->value,
@@ -39,7 +41,7 @@ class DispatchController extends Controller
             ])
             ->orderBy('planned_start_at')
             ->get()
-            ->map(fn (Trip $trip) => $this->tripCard($trip, $capacity))
+            ->map(fn (Trip $trip) => $this->tripCard($trip, $capacity, $compliance))
             ->all();
 
         $stopIds = Stop::query()
@@ -55,6 +57,10 @@ class DispatchController extends Controller
         return Inertia::render('dispatch/Index', [
             'trips' => $trips,
             'pool' => Shipment::query()
+                ->whereIn('status', [
+                    ShipmentStatus::Planned->value,
+                    ShipmentStatus::Failed->value,
+                ])
                 ->whereNotIn('id', $assignedIds)
                 ->latest()
                 ->limit(100)
@@ -79,6 +85,7 @@ class DispatchController extends Controller
             'can' => [
                 'manage' => $request->user()->hasTeamPermission($current_team, TeamPermission::ManageOperations),
                 'overrideCapacity' => $request->user()->hasTeamPermission($current_team, TeamPermission::OverrideCapacity),
+                'overrideCompliance' => $request->user()->hasTeamPermission($current_team, TeamPermission::OverrideCompliance),
             ],
         ]);
     }
@@ -88,12 +95,14 @@ class DispatchController extends Controller
      *
      * @return array<string, mixed>
      */
-    protected function tripCard(Trip $trip, ComputeTripCapacity $capacity): array
+    protected function tripCard(Trip $trip, ComputeTripCapacity $capacity, AssertTripCompliance $compliance): array
     {
         $shipments = $trip->stops
             ->flatMap(fn (Stop $stop) => $stop->shipments)
             ->unique('id')
             ->values();
+
+        $violations = $compliance->handle($trip);
 
         return [
             'id' => $trip->id,
@@ -108,6 +117,10 @@ class DispatchController extends Controller
             'trailer_id' => $trip->trailer_id,
             'trailer_name' => $trip->trailer?->name,
             'capacity' => $capacity->handle($trip),
+            'compliance' => [
+                'ok' => $violations === [],
+                'violations' => $violations,
+            ],
             'shipments' => $shipments
                 ->map(fn (Shipment $shipment) => [
                     'id' => $shipment->id,

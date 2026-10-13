@@ -3,12 +3,14 @@
 namespace App\Actions\Execution;
 
 use App\Actions\Shipments\DeriveShipmentStatus;
+use App\Actions\Trips\DeriveTripStatus;
 use App\Enums\StopStatus;
 use App\Models\DeliveryAttempt;
 use App\Models\Shipment;
 use App\Models\Stop;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,7 +24,7 @@ use Illuminate\Validation\ValidationException;
  */
 class RecordDeliveryAttempt
 {
-    public function __construct(protected DeriveShipmentStatus $deriveStatus) {}
+    public function __construct(protected DeriveShipmentStatus $deriveStatus, protected DeriveTripStatus $deriveTripStatus) {}
 
     /**
      * Record the attempt and refresh the status of every affected shipment.
@@ -31,61 +33,71 @@ class RecordDeliveryAttempt
      */
     public function handle(Team $team, Stop $stop, array $data, ?User $user = null): DeliveryAttempt
     {
-        return DB::transaction(function () use ($team, $stop, $data, $user): DeliveryAttempt {
-            $existing = $team->deliveryAttempts()
-                ->where('idempotency_key', $data['idempotency_key'])
-                ->first();
+        $existing = $team->deliveryAttempts()
+            ->where('idempotency_key', $data['idempotency_key'])
+            ->first();
 
-            if ($existing !== null) {
-                return $existing->load('lines');
-            }
+        if ($existing !== null) {
+            return $existing->load('lines');
+        }
 
-            $shipmentIds = $this->distinctShipmentIds($data['lines']);
+        try {
+            return DB::transaction(function () use ($team, $stop, $data, $user): DeliveryAttempt {
+                $shipmentIds = $this->distinctShipmentIds($data['lines']);
 
-            $attempt = $team->deliveryAttempts()->create([
-                'stop_id' => $stop->id,
-                'shipment_id' => $data['shipment_id'] ?? (count($shipmentIds) === 1 ? $shipmentIds[0] : null),
-                'outcome' => $data['outcome'],
-                'failure_reason' => $data['failure_reason'] ?? null,
-                'recipient_name' => $data['recipient_name'] ?? null,
-                'notes' => $data['notes'] ?? null,
-                'latitude' => $data['latitude'] ?? null,
-                'longitude' => $data['longitude'] ?? null,
-                'occurred_at' => $data['occurred_at'],
-                'idempotency_key' => $data['idempotency_key'],
-                'recorded_by' => $user?->id,
-            ]);
-
-            $affectedShipmentIds = [];
-
-            foreach ($data['lines'] as $line) {
-                $shipment = $this->shipmentForStop($stop, (int) $line['shipment_id']);
-                $quantity = (int) $line['quantity'];
-                $success = (bool) $line['success'];
-
-                $this->assertWithinPlanned($shipment, $quantity, $success);
-
-                $team->deliveryAttemptLines()->create([
-                    'delivery_attempt_id' => $attempt->id,
-                    'shipment_id' => $shipment->id,
-                    'shipment_item_id' => $line['shipment_item_id'] ?? null,
-                    'quantity' => $quantity,
-                    'success' => $success,
-                    'discrepancy_reason' => $line['discrepancy_reason'] ?? null,
-                    'notes' => $line['notes'] ?? null,
+                $attempt = $team->deliveryAttempts()->create([
+                    'stop_id' => $stop->id,
+                    'shipment_id' => $data['shipment_id'] ?? (count($shipmentIds) === 1 ? $shipmentIds[0] : null),
+                    'outcome' => $data['outcome'],
+                    'failure_reason' => $data['failure_reason'] ?? null,
+                    'recipient_name' => $data['recipient_name'] ?? null,
+                    'notes' => $data['notes'] ?? null,
+                    'latitude' => $data['latitude'] ?? null,
+                    'longitude' => $data['longitude'] ?? null,
+                    'occurred_at' => $data['occurred_at'],
+                    'idempotency_key' => $data['idempotency_key'],
+                    'recorded_by' => $user?->id,
                 ]);
 
-                $affectedShipmentIds[$shipment->id] = true;
-            }
+                $affectedShipmentIds = [];
 
-            $this->markArrived($stop);
+                foreach ($data['lines'] as $line) {
+                    $shipment = $this->shipmentForStop($stop, (int) $line['shipment_id']);
+                    $quantity = (int) $line['quantity'];
+                    $success = (bool) $line['success'];
 
-            foreach (array_keys($affectedShipmentIds) as $shipmentId) {
-                $this->deriveStatus->handle($team->shipments()->findOrFail($shipmentId));
-            }
+                    $this->assertWithinPlanned($shipment, $quantity, $success);
 
-            return $attempt->load('lines');
-        });
+                    $team->deliveryAttemptLines()->create([
+                        'delivery_attempt_id' => $attempt->id,
+                        'shipment_id' => $shipment->id,
+                        'shipment_item_id' => $line['shipment_item_id'] ?? null,
+                        'quantity' => $quantity,
+                        'success' => $success,
+                        'discrepancy_reason' => $line['discrepancy_reason'] ?? null,
+                        'notes' => $line['notes'] ?? null,
+                    ]);
+
+                    $affectedShipmentIds[$shipment->id] = true;
+                }
+
+                $this->markArrived($stop);
+
+                $this->deriveTripStatus->handle($stop->trip);
+
+                foreach (array_keys($affectedShipmentIds) as $shipmentId) {
+                    $this->deriveStatus->handle($team->shipments()->findOrFail($shipmentId));
+                }
+
+                return $attempt->load('lines');
+            });
+        } catch (UniqueConstraintViolationException) {
+            // A concurrent retry already inserted the same key; replay it.
+            return $team->deliveryAttempts()
+                ->where('idempotency_key', $data['idempotency_key'])
+                ->firstOrFail()
+                ->load('lines');
+        }
     }
 
     /**
@@ -115,7 +127,8 @@ class RecordDeliveryAttempt
             ]);
         }
 
-        return $shipment;
+        // Lock the shipment row so concurrent attempts cannot over-deliver it.
+        return $shipment->newQuery()->whereKey($shipment->id)->lockForUpdate()->firstOrFail();
     }
 
     /**
@@ -152,7 +165,10 @@ class RecordDeliveryAttempt
     protected function markArrived(Stop $stop): void
     {
         if ($stop->status === StopStatus::Pending) {
-            $stop->update(['status' => StopStatus::Arrived]);
+            $stop->update([
+                'status' => StopStatus::Arrived,
+                'actual_arrival_at' => $stop->actual_arrival_at ?? now(),
+            ]);
         }
     }
 }

@@ -4,6 +4,11 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 
+beforeEach(function () {
+    // The verification requirement is disabled by default; opt in to test it.
+    config(['auth.email_verification_required' => true]);
+});
+
 test('sends verification notification', function () {
     Notification::fake();
 

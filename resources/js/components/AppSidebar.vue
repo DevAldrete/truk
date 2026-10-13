@@ -11,6 +11,7 @@ import {
     Navigation,
     Package,
     Route,
+    TriangleAlert,
     Truck,
     Users,
     Waypoints,
@@ -32,6 +33,7 @@ import {
 import { t } from '@/lib/i18n';
 import { index as driverIndex } from '@/routes/driver';
 import { index as driversIndex } from '@/routes/drivers';
+import { index as incidentsIndex } from '@/routes/incidents';
 import { index as loadsIndex } from '@/routes/loads';
 import { index as locationsIndex } from '@/routes/locations';
 import { index as ordersIndex } from '@/routes/orders';
@@ -134,6 +136,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: t('Trips'),
             href: tripsIndex.url({ current_team: teamSlug.value }),
             icon: Route,
+        },
+        {
+            title: t('Incidents'),
+            href: incidentsIndex.url({ current_team: teamSlug.value }),
+            icon: TriangleAlert,
         },
         {
             title: t('Help'),

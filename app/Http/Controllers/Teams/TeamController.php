@@ -156,7 +156,7 @@ class TeamController extends Controller
         DB::transaction(function () use ($user, $team) {
             User::where('current_team_id', $team->id)
                 ->where('id', '!=', $user->id)
-                ->each(fn (User $affectedUser) => $affectedUser->switchTeam($affectedUser->personalTeam()));
+                ->each(fn (User $affectedUser) => $affectedUser->switchTeam($affectedUser->personalTeam() ?? $affectedUser->fallbackTeam($team)));
 
             $team->invitations()->delete();
             $team->memberships()->delete();

@@ -89,7 +89,7 @@ class LocationController extends Controller
         $search = $request->string('search')->trim()->value() ?: null;
 
         return [
-            'locations' => Location::query()
+            'locations' => Inertia::scroll(Location::query()
                 ->with('party:id,name')
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -99,7 +99,7 @@ class LocationController extends Controller
                 ->orderBy('name')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Location $location) => $this->summary($location)),
+                ->through(fn (Location $location) => $this->summary($location))),
             'filters' => [
                 'search' => $search,
             ],

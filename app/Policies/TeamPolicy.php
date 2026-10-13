@@ -49,6 +49,14 @@ class TeamPolicy
     }
 
     /**
+     * Determine whether the user can override the compliance gate on dispatch.
+     */
+    public function overrideCompliance(User $user, Team $team): bool
+    {
+        return $user->hasTeamPermission($team, TeamPermission::OverrideCompliance);
+    }
+
+    /**
      * Determine whether the user can execute trips: scans, attempts, POD, incidents, expenses.
      */
     public function executeOperations(User $user, Team $team): bool

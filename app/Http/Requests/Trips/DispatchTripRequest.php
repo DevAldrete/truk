@@ -11,8 +11,10 @@ class DispatchTripRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        if (! $this->filled('capacity_override_reason')) {
-            $this->merge(['capacity_override_reason' => null]);
+        foreach (['capacity_override_reason', 'compliance_override_reason'] as $field) {
+            if (! $this->filled($field)) {
+                $this->merge([$field => null]);
+            }
         }
     }
 
@@ -25,6 +27,7 @@ class DispatchTripRequest extends FormRequest
     {
         return [
             'capacity_override_reason' => ['nullable', 'string', 'max:500'],
+            'compliance_override_reason' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

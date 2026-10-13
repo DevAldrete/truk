@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { Package } from '@lucide/vue';
 import { computed, reactive } from 'vue';
 import DispatchTripCard from '@/components/catalog/DispatchTripCard.vue';
@@ -12,6 +12,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { store as assignTripShipment } from '@/routes/trips/shipments';
+import { show as showShipment } from '@/routes/shipments';
 import type { DispatchPoolShipment, DispatchTrip, Option } from '@/types';
 
 const props = defineProps<{
@@ -20,7 +21,11 @@ const props = defineProps<{
     drivers: Option[];
     vehicles: Option[];
     trailers: Option[];
-    can: { manage: boolean; overrideCapacity: boolean };
+    can: {
+        manage: boolean;
+        overrideCapacity: boolean;
+        overrideCompliance: boolean;
+    };
 }>();
 
 const page = usePage();
@@ -80,6 +85,7 @@ const assignTo = (shipmentId: number) => {
                     :pool="pool"
                     :can-manage="can.manage"
                     :can-override="can.overrideCapacity"
+                    :can-override-compliance="can.overrideCompliance"
                 />
 
                 <div
@@ -112,9 +118,17 @@ const assignTo = (shipmentId: number) => {
                         <div class="flex items-center gap-2">
                             <Package class="size-4 shrink-0 opacity-50" />
                             <div class="min-w-0 flex-1">
-                                <p class="truncate text-sm font-medium">
+                                <Link
+                                    class="truncate text-sm font-medium hover:underline"
+                                    :href="
+                                        showShipment({
+                                            current_team: teamSlug,
+                                            shipment: shipment.id,
+                                        })
+                                    "
+                                >
                                     {{ shipment.number }}
-                                </p>
+                                </Link>
                                 <p
                                     class="truncate text-xs text-muted-foreground"
                                 >

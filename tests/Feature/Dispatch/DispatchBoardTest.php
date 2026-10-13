@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\ShipmentStatus;
 use App\Enums\TeamRole;
 use App\Enums\TripStatus;
 use App\Models\Shipment;
@@ -33,6 +34,22 @@ test('the dispatch board lists open trips and unassigned shipments', function ()
             ->has('trips', 1)
             ->has('pool', 1)
             ->where('pool.0.id', $pool->id));
+});
+
+test('closed shipments are not shown in the dispatch pool', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    Shipment::factory()->for($team)->create(['status' => ShipmentStatus::Delivered->value]);
+    $planned = Shipment::factory()->for($team)->create(['status' => ShipmentStatus::Planned->value]);
+
+    $this->actingAs($user)
+        ->get(route('dispatch', $team))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('pool', 1)
+            ->where('pool.0.id', $planned->id));
 });
 
 test('a shipment can be assigned to and removed from a trip', function () {

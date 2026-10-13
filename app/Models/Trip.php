@@ -31,6 +31,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $capacity_override_reason
  * @property int|null $capacity_overridden_by
  * @property Carbon|null $capacity_overridden_at
+ * @property string|null $compliance_override_reason
+ * @property int|null $compliance_overridden_by
+ * @property Carbon|null $compliance_overridden_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -39,6 +42,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, ScanEvent> $scanEvents
  * @property-read Collection<int, Incident> $incidents
  * @property-read Collection<int, Expense> $expenses
+ * @property-read Collection<int, TripCompliance> $compliance
  * @property-read Driver|null $driver
  * @property-read Vehicle|null $vehicle
  * @property-read Trailer|null $trailer
@@ -141,6 +145,16 @@ class Trip extends Model
     }
 
     /**
+     * Get the fiscal compliance snapshots of this trip.
+     *
+     * @return HasMany<TripCompliance, $this>
+     */
+    public function compliance(): HasMany
+    {
+        return $this->hasMany(TripCompliance::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -152,6 +166,7 @@ class Trip extends Model
             'planned_start_at' => 'datetime',
             'planned_end_at' => 'datetime',
             'capacity_overridden_at' => 'datetime',
+            'compliance_overridden_at' => 'datetime',
         ];
     }
 }

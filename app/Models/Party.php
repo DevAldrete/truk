@@ -22,6 +22,9 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $legal_name
  * @property string|null $rfc
+ * @property string|null $tax_regime
+ * @property string|null $cfdi_use
+ * @property string|null $tax_zip_code
  * @property string|null $email
  * @property string|null $phone
  * @property Carbon|null $created_at
@@ -33,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Location> $locations
  * @property-read Team $team
  */
-#[Fillable(['type', 'name', 'legal_name', 'rfc', 'email', 'phone'])]
+#[Fillable(['type', 'name', 'legal_name', 'rfc', 'tax_regime', 'cfdi_use', 'tax_zip_code', 'email', 'phone'])]
 class Party extends Model
 {
     /** @use HasFactory<PartyFactory> */

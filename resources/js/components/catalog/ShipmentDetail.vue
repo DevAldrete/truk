@@ -19,7 +19,9 @@ import {
     destroy as destroyPackage,
     store as storePackages,
 } from '@/routes/shipments/packages';
+import { show as showLoad } from '@/routes/loads';
 import { show as showOrder } from '@/routes/orders';
+import { show as showTrip } from '@/routes/trips';
 import type { Option, ShipmentDetail } from '@/types';
 
 const props = defineProps<{
@@ -113,21 +115,68 @@ const remainingPackages = computed(() =>
                 </div>
                 <p class="mt-1 text-xs text-muted-foreground">
                     {{ shipment.customer_name ?? $t('No customer') }}
-                    <template v-if="shipment.order_number">
-                        ·
-                        <Link
-                            class="hover:underline"
-                            :href="
-                                showOrder({
-                                    current_team: teamSlug,
-                                    order: shipment.order_id!,
-                                })
-                            "
-                        >
-                            {{ shipment.order_number }}
-                        </Link>
-                    </template>
                 </p>
+
+                <div
+                    v-if="
+                        shipment.order_number ||
+                        shipment.load_number ||
+                        shipment.trip_number
+                    "
+                    class="mt-2 flex flex-wrap items-center gap-1.5 text-xs"
+                >
+                    <Link
+                        v-if="shipment.order_number"
+                        class="rounded-full border px-2 py-0.5 hover:underline"
+                        :href="
+                            showOrder({
+                                current_team: teamSlug,
+                                order: shipment.order_id!,
+                            })
+                        "
+                    >
+                        {{ shipment.order_number }}
+                    </Link>
+                    <span
+                        v-if="shipment.order_number && shipment.load_number"
+                        class="text-muted-foreground"
+                    >
+                        →
+                    </span>
+                    <Link
+                        v-if="shipment.load_number"
+                        class="rounded-full border px-2 py-0.5 hover:underline"
+                        :href="
+                            showLoad({
+                                current_team: teamSlug,
+                                load: shipment.load_id!,
+                            })
+                        "
+                    >
+                        {{ shipment.load_number }}
+                    </Link>
+                    <span
+                        v-if="
+                            (shipment.order_number || shipment.load_number) &&
+                            shipment.trip_number
+                        "
+                        class="text-muted-foreground"
+                    >
+                        →
+                    </span>
+                    <Link
+                        v-if="shipment.trip_number"
+                        class="rounded-full border px-2 py-0.5 hover:underline"
+                        :href="
+                            showTrip({
+                                current_team: teamSlug,
+                                trip: shipment.trip_id!,
+                            })
+                        "
+                    >
+                        {{ shipment.trip_number }}
+                    </Link>
+                </div>
             </div>
 
             <DeleteButton

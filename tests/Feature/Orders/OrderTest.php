@@ -3,9 +3,11 @@
 use App\Enums\OrderStatus;
 use App\Enums\PartyType;
 use App\Enums\TeamRole;
+use App\Models\Load;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Party;
+use App\Models\Shipment;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -192,4 +194,42 @@ test('orders of another team are not reachable', function () {
     $otherOrder = Order::factory()->for(Team::factory()->create())->create();
 
     $this->actingAs($user)->get(route('orders.show', [$team, $otherOrder]))->assertNotFound();
+});
+
+test('an order cannot make a disallowed status transition', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $order = Order::factory()->for($team)->create(['status' => OrderStatus::Completed->value]);
+
+    $this->actingAs($user)
+        ->from(route('orders.show', [$team, $order]))
+        ->patch(route('orders.update', [$team, $order]), [
+            'status' => OrderStatus::Draft->value,
+            'currency' => 'MXN',
+            'items' => [['description' => 'Cajas', 'quantity' => 1, 'unit' => 'piece']],
+        ])
+        ->assertSessionHasErrors('status');
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Completed);
+});
+
+test('an order shipment ref includes its load and delivered quantity', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+    $order = Order::factory()->for($team)->confirmed()->create();
+    $load = Load::factory()->for($team)->create(['number' => 'LOAD-00044']);
+
+    Shipment::factory()->for($team)->create([
+        'order_id' => $order->id,
+        'load_id' => $load->id,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('orders.show', [$team, $order]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('order.shipments.0.load_number', 'LOAD-00044')
+            ->where('order.shipments.0.delivered_quantity', 0));
 });

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OrderStatus;
 use App\Enums\ShipmentStatus;
 use App\Enums\TeamRole;
 use App\Models\Location;
@@ -78,6 +79,40 @@ test('warehouse members cannot convert orders into shipments', function () {
     $this->actingAs($user)
         ->post(route('orders.shipments.store', [$team, $order]), [])
         ->assertForbidden();
+
+    $this->assertDatabaseCount('shipments', 0);
+});
+
+test('an order can only be converted into one shipment', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Dispatcher->value]);
+    $order = Order::factory()->for($team)->confirmed()->create();
+    OrderItem::factory()->for($team)->for($order)->create(['quantity' => 1]);
+
+    $this->actingAs($user)->post(route('orders.shipments.store', [$team, $order]))->assertRedirect();
+
+    expect($order->fresh()->status)->toBe(OrderStatus::InProgress);
+
+    $this->actingAs($user)
+        ->from(route('orders.show', [$team, $order]))
+        ->post(route('orders.shipments.store', [$team, $order]))
+        ->assertSessionHasErrors('order');
+
+    $this->assertDatabaseCount('shipments', 1);
+});
+
+test('a cancelled order cannot be converted into a shipment', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Dispatcher->value]);
+    $order = Order::factory()->for($team)->create(['status' => OrderStatus::Cancelled->value]);
+    OrderItem::factory()->for($team)->for($order)->create(['quantity' => 1]);
+
+    $this->actingAs($user)
+        ->from(route('orders.show', [$team, $order]))
+        ->post(route('orders.shipments.store', [$team, $order]))
+        ->assertSessionHasErrors('order');
 
     $this->assertDatabaseCount('shipments', 0);
 });

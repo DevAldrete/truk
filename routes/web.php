@@ -143,6 +143,8 @@ Route::prefix('{current_team}')
         Route::delete('trips/{trip}/shipments/{shipment}', [TripShipmentController::class, 'destroy'])->name('trips.shipments.destroy');
         Route::post('trips/{trip}/dispatch', [TripDispatchController::class, 'store'])->name('trips.dispatch');
 
+        Route::get('incidents', [IncidentController::class, 'index'])->name('incidents.index');
+        Route::get('incidents/{incident}', [IncidentController::class, 'show'])->name('incidents.show');
         Route::patch('incidents/{incident}', [IncidentController::class, 'update'])->name('incidents.update');
 
         Route::scopeBindings()->group(function () {

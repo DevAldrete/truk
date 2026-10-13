@@ -51,12 +51,13 @@ class AssignShipmentToTrip
      */
     protected function matchingStop(Trip $trip, Shipment $shipment): ?Stop
     {
+        if ($shipment->delivery_location_id === null) {
+            return null;
+        }
+
         return $trip->stops()
             ->where('type', StopType::Delivery->value)
-            ->when(
-                $shipment->delivery_location_id !== null,
-                fn ($query) => $query->where('location_id', $shipment->delivery_location_id),
-            )
+            ->where('location_id', $shipment->delivery_location_id)
             ->orderBy('sequence')
             ->first();
     }
@@ -66,6 +67,9 @@ class AssignShipmentToTrip
      */
     protected function createStop(Team $team, Trip $trip, Shipment $shipment): Stop
     {
+        // Lock the trip so concurrent assignments cannot pick the same sequence.
+        $trip->newQuery()->whereKey($trip->id)->lockForUpdate()->first();
+
         return $team->stops()->create([
             'trip_id' => $trip->id,
             'sequence' => (int) $trip->stops()->max('sequence') + 1,

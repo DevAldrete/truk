@@ -47,11 +47,17 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     /**
      * Determine whether the user has a verified email.
      *
-     * A staff account created by an organization may have no email at all; it
-     * is treated as verified so the `verified` middleware never blocks it.
+     * When email verification is disabled (see config/auth.php), every account
+     * counts as verified so registration and login stay frictionless. A staff
+     * account created by an organization may have no email at all; it is always
+     * treated as verified so the `verified` middleware never blocks it.
      */
     public function hasVerifiedEmail(): bool
     {
+        if (! config('auth.email_verification_required')) {
+            return true;
+        }
+
         return $this->email === null || parent::hasVerifiedEmail();
     }
 

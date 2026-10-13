@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $team_id
  * @property int|null $party_id
+ * @property string|null $rfc
  * @property string $name
  * @property string $street
  * @property string|null $exterior_number
@@ -37,6 +38,7 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'party_id',
+    'rfc',
     'name',
     'street',
     'exterior_number',

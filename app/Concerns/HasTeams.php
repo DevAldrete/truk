@@ -77,10 +77,17 @@ trait HasTeams
     }
 
     /**
-     * Switch to the given team.
+     * Switch to the given team, or clear the current team when none is given.
      */
-    public function switchTeam(Team $team): bool
+    public function switchTeam(?Team $team): bool
     {
+        if ($team === null) {
+            $this->update(['current_team_id' => null]);
+            $this->setRelation('currentTeam', null);
+
+            return true;
+        }
+
         if (! $this->belongsToTeam($team)) {
             return false;
         }

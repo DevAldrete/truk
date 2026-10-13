@@ -25,6 +25,12 @@ use Illuminate\Support\Carbon;
  * @property string $configuration
  * @property int $max_payload_grams
  * @property int|null $max_volume_cm3
+ * @property int|null $year
+ * @property int|null $tare_weight_grams
+ * @property int|null $axles
+ * @property string|null $permit_number
+ * @property Carbon|null $insurance_expires_at
+ * @property string|null $gps_device_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -34,7 +40,7 @@ use Illuminate\Support\Carbon;
  * @property-read Party|null $carrierParty
  * @property-read Team $team
  */
-#[Fillable(['carrier_party_id', 'name', 'plate', 'configuration', 'max_payload_grams', 'max_volume_cm3'])]
+#[Fillable(['carrier_party_id', 'name', 'plate', 'configuration', 'max_payload_grams', 'max_volume_cm3', 'year', 'tare_weight_grams', 'axles', 'permit_number', 'insurance_expires_at', 'gps_device_id'])]
 class Vehicle extends Model
 {
     /** @use HasFactory<VehicleFactory> */
@@ -80,5 +86,17 @@ class Vehicle extends Model
         return Attribute::make(
             get: fn (): ?float => $this->max_volume_cm3 === null ? null : $this->max_volume_cm3 / 1000000,
         );
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'insurance_expires_at' => 'date',
+        ];
     }
 }

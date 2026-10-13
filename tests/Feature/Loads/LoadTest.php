@@ -4,7 +4,10 @@ use App\Enums\LoadStatus;
 use App\Enums\TeamRole;
 use App\Models\Load;
 use App\Models\Shipment;
+use App\Models\Stop;
+use App\Models\StopShipment;
 use App\Models\Team;
+use App\Models\Trip;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -23,6 +26,25 @@ test('the load planner lists the loads of the current team', function () {
             ->component('loads/Index')
             ->has('loads.data', 1)
             ->where('loads.data.0.number', 'LOAD-00001'));
+});
+
+test('a load detail lists the trips serving it', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    $load = Load::factory()->for($team)->create();
+    $shipment = Shipment::factory()->for($team)->create(['load_id' => $load->id]);
+    $trip = Trip::factory()->for($team)->create(['number' => 'TRP-00043']);
+    $stop = Stop::factory()->for($team)->for($trip)->create();
+    StopShipment::factory()->for($team)->for($stop)->for($shipment)->create();
+
+    $this->actingAs($user)
+        ->get(route('loads.show', [$team, $load]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('load.trips', 1)
+            ->where('load.trips.0.number', 'TRP-00043'));
 });
 
 test('a load is created with a server assigned number', function () {

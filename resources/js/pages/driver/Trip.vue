@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import ExpenseSheet from '@/components/driver/ExpenseSheet.vue';
 import IncidentSheet from '@/components/driver/IncidentSheet.vue';
 import StopExecutionCard from '@/components/driver/StopExecutionCard.vue';
+import { formatDateTime } from '@/lib/datetime';
 import type { DriverOptions, DriverTripDetail } from '@/types';
 
 const props = defineProps<{
@@ -46,7 +47,9 @@ const money = (minor: number, currency: string) =>
                         class="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
                     >
                         <CalendarClock class="size-3.5" />
-                        {{ trip.planned_start_at }}
+                        {{
+                            formatDateTime(trip.planned_start_at, trip.timezone)
+                        }}
                     </p>
                     <p
                         v-if="trip.trailer_name"

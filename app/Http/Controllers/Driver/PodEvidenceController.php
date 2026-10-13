@@ -24,7 +24,7 @@ class PodEvidenceController extends Controller
      */
     public function signature(Request $request, Team $current_team, ProofOfDelivery $pod): StreamedResponse
     {
-        return $this->respond($request, $current_team, $pod->signature_path);
+        return $this->respond($request, $current_team, $pod, $pod->signature_path);
     }
 
     /**
@@ -32,7 +32,7 @@ class PodEvidenceController extends Controller
      */
     public function photo(Request $request, Team $current_team, ProofOfDelivery $pod, int $index): StreamedResponse
     {
-        return $this->respond($request, $current_team, ($pod->photos ?? [])[$index] ?? null);
+        return $this->respond($request, $current_team, $pod, ($pod->photos ?? [])[$index] ?? null);
     }
 
     /**
@@ -40,22 +40,30 @@ class PodEvidenceController extends Controller
      */
     public function document(Request $request, Team $current_team, ProofOfDelivery $pod, int $index): StreamedResponse
     {
-        return $this->respond($request, $current_team, ($pod->document_paths ?? [])[$index] ?? null);
+        return $this->respond($request, $current_team, $pod, ($pod->document_paths ?? [])[$index] ?? null);
     }
 
     /**
      * Authorize and stream a stored evidence path.
      */
-    protected function respond(Request $request, Team $team, ?string $path): StreamedResponse
+    protected function respond(Request $request, Team $team, ProofOfDelivery $pod, ?string $path): StreamedResponse
     {
         $user = $request->user();
 
-        $allowed = $user !== null && (
-            $user->hasTeamPermission($team, TeamPermission::ManageOperations)
-            || $user->hasTeamPermission($team, TeamPermission::ExecuteOperations)
-        );
+        abort_if($user === null, 403);
 
-        abort_unless($allowed, 403);
+        if (! $user->hasTeamPermission($team, TeamPermission::ManageOperations)) {
+            abort_unless($user->hasTeamPermission($team, TeamPermission::ExecuteOperations), 403);
+
+            $driver = $user->driverProfileFor($team);
+            $tripDriverId = $pod->stop?->trip?->driver_id;
+
+            // A driver may only read evidence captured on their own trip.
+            abort_unless(
+                $driver !== null && $tripDriverId !== null && $driver->id === $tripDriverId,
+                403,
+            );
+        }
 
         abort_if($path === null || ! Storage::disk('evidence')->exists($path), 404);
 

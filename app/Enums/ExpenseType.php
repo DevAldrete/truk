@@ -8,6 +8,10 @@ enum ExpenseType: string
     case Toll = 'toll';
     case Lodging = 'lodging';
     case Maintenance = 'maintenance';
+    case Viaticos = 'viaticos';
+    case Maniobras = 'maniobras';
+    case Fines = 'fines';
+    case Detention = 'detention';
     case Misc = 'misc';
 
     /**

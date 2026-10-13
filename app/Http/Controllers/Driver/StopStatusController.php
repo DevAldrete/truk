@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Driver;
 
 use App\Actions\Execution\UpdateStopStatus;
+use App\Actions\Trips\DeriveTripStatus;
 use App\Enums\StopStatus;
 use App\Http\Controllers\Concerns\AuthorizesTripExecution;
 use App\Http\Controllers\Controller;
@@ -26,12 +27,15 @@ class StopStatusController extends Controller
         Trip $trip,
         Stop $stop,
         UpdateStopStatus $updateStatus,
+        DeriveTripStatus $deriveTripStatus,
     ): RedirectResponse {
         $this->authorizeTripExecution($request, $current_team, $trip);
 
         $data = $request->validated();
 
         $updateStatus->handle($stop, StopStatus::from($data['status']), $data['notes'] ?? null);
+
+        $deriveTripStatus->handle($trip);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Stop updated.')]);
 

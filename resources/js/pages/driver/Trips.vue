@@ -2,6 +2,7 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { CalendarClock, ChevronRight, MapPin, Truck } from '@lucide/vue';
 import { computed } from 'vue';
+import { formatDateTime } from '@/lib/datetime';
 import { show as tripShow } from '@/routes/driver/trips';
 import type { DriverTripSummary } from '@/types';
 
@@ -56,7 +57,7 @@ const teamSlug = computed(() => page.props.currentTeam?.slug ?? '');
                             class="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
                         >
                             <CalendarClock class="size-3.5" />
-                            {{ trip.planned_start_at }}
+                            {{ formatDateTime(trip.planned_start_at) }}
                         </p>
                         <p
                             v-if="trip.vehicle_name"

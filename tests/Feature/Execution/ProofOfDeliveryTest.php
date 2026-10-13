@@ -157,6 +157,32 @@ test('pod evidence is streamed to members and hidden from other tenants', functi
         ->assertNotFound();
 });
 
+test('a driver cannot read pod evidence from another driver trip', function () {
+    Storage::fake('evidence');
+    $team = Team::factory()->create();
+    $driverUser = User::factory()->create();
+    $team->members()->attach($driverUser, ['role' => TeamRole::Driver->value]);
+    Driver::factory()->for($team)->create(['user_id' => $driverUser->id]);
+    $otherDriver = Driver::factory()->for($team)->create();
+
+    $trip = Trip::factory()->for($team)->create(['driver_id' => $otherDriver->id]);
+    $stop = Stop::factory()->for($team)->for($trip)->create();
+
+    $owner = User::factory()->create();
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+
+    $this->actingAs($owner)->post(route('driver.trips.stops.pod.store', [$team, $trip, $stop]), [
+        'signature' => POD_SIGNATURE,
+        'idempotency_key' => (string) Str::uuid(),
+    ])->assertRedirect();
+
+    $pod = ProofOfDelivery::query()->withoutGlobalScope('team')->sole();
+
+    $this->actingAs($driverUser)
+        ->get(route('driver.pods.signature', [$team, $pod->id]))
+        ->assertForbidden();
+});
+
 test('a warehouse member cannot read pod evidence', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();

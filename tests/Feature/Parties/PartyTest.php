@@ -28,6 +28,36 @@ test('the directory lists the parties of the current team', function () {
             ->where('can.manage', true));
 });
 
+test('the directory exposes its list as a scroll prop for infinite paging', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    Party::factory()->for($team)->count(30)->create();
+
+    $response = $this->actingAs($user)->get(route('parties.index', $team));
+
+    $response->assertOk();
+
+    $page = json_decode(json_encode($response->viewData('page')), true);
+
+    expect($page['scrollProps']['parties']['currentPage'])->toBe(1)
+        ->and($page['scrollProps']['parties']['nextPage'])->toBe(2)
+        ->and($page['scrollProps']['parties']['pageName'])->toBe('page');
+});
+
+test('the directory paginates to the next page', function () {
+    $user = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
+
+    Party::factory()->for($team)->count(30)->create();
+
+    $this->actingAs($user)
+        ->get(route('parties.index', ['current_team' => $team, 'page' => 2]))
+        ->assertInertia(fn (Assert $page) => $page->has('parties.data', 5));
+});
+
 test('the directory can be filtered by type and searched by name', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();

@@ -32,12 +32,12 @@ class ConvertOrderRequest extends FormRequest
             'pickup_location_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('locations', 'id')->where('team_id', $this->team()->id),
+                Rule::exists('locations', 'id')->where('team_id', $this->team()->id)->whereNull('deleted_at'),
             ],
             'delivery_location_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('locations', 'id')->where('team_id', $this->team()->id),
+                Rule::exists('locations', 'id')->where('team_id', $this->team()->id)->whereNull('deleted_at'),
             ],
             'package_count' => ['nullable', 'integer', 'min:0', 'max:'.config('shipments.max_packages_per_shipment')],
         ];

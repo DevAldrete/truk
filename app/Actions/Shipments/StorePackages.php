@@ -23,6 +23,9 @@ class StorePackages
         }
 
         return DB::transaction(function () use ($team, $shipment, $count, $weightGrams): int {
+            // Lock the shipment so concurrent additions cannot collide on numbering.
+            $shipment->newQuery()->whereKey($shipment->id)->lockForUpdate()->first();
+
             $existing = $this->latestSequence($shipment);
             $now = now();
             $rows = [];

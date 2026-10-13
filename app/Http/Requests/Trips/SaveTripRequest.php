@@ -13,7 +13,7 @@ class SaveTripRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        foreach (['planned_start_at', 'planned_end_at', 'timezone', 'notes', 'capacity_override_reason'] as $field) {
+        foreach (['planned_start_at', 'planned_end_at', 'timezone', 'notes', 'capacity_override_reason', 'compliance_override_reason'] as $field) {
             if (! $this->filled($field)) {
                 $this->merge([$field => null]);
             }
@@ -34,6 +34,7 @@ class SaveTripRequest extends FormRequest
             'timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
             'notes' => ['nullable', 'string', 'max:2000'],
             'capacity_override_reason' => ['nullable', 'string', 'max:500'],
+            'compliance_override_reason' => ['nullable', 'string', 'max:500'],
         ];
     }
 }

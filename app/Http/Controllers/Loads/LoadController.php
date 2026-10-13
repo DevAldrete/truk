@@ -10,6 +10,7 @@ use App\Http\Requests\Loads\SaveLoadRequest;
 use App\Models\Load;
 use App\Models\Shipment;
 use App\Models\Team;
+use App\Models\Trip;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -106,7 +107,7 @@ class LoadController extends Controller
         $status = $request->query('status');
 
         return [
-            'loads' => Load::query()
+            'loads' => Inertia::scroll(Load::query()
                 ->withCount('shipments')
                 ->when($search, fn ($query, string $search) => $query->whereRaw('LOWER(number) LIKE ?', ['%'.mb_strtolower($search).'%']))
                 ->when(
@@ -116,7 +117,7 @@ class LoadController extends Controller
                 ->latest()
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Load $load) => $this->summary($load)),
+                ->through(fn (Load $load) => $this->summary($load))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, LoadStatus::values(), true) ? $status : null,
@@ -165,9 +166,24 @@ class LoadController extends Controller
     {
         $load->load(['shipments' => fn ($query) => $query->orderBy('id')]);
 
+        $shipmentIds = $load->shipments->pluck('id')->all();
+
+        $trips = Trip::query()
+            ->whereHas('stops.shipments', fn ($query) => $query->whereIn('shipments.id', $shipmentIds))
+            ->orderByDesc('planned_start_at')
+            ->get(['id', 'number', 'status'])
+            ->map(fn (Trip $trip) => [
+                'id' => $trip->id,
+                'number' => $trip->number,
+                'status' => $trip->status->value,
+                'status_label' => $trip->status->label(),
+            ])
+            ->all();
+
         return [
             ...$this->summary($load),
             'shipments_count' => $load->shipments->count(),
+            'trips' => $trips,
             'shipments' => $load->shipments
                 ->map(fn (Shipment $shipment) => [
                     'id' => $shipment->id,

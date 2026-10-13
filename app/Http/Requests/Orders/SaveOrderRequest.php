@@ -66,7 +66,7 @@ class SaveOrderRequest extends FormRequest
             'customer_party_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('parties', 'id')->where('team_id', $this->team()->id),
+                Rule::exists('parties', 'id')->where('team_id', $this->team()->id)->whereNull('deleted_at'),
             ],
             'status' => ['required', Rule::enum(OrderStatus::class)],
             'currency' => ['required', 'string', 'size:3'],

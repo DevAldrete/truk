@@ -31,6 +31,22 @@ test('team invitations can be created', function () {
     ]);
 });
 
+test('an admin cannot invite an owner', function () {
+    $admin = User::factory()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
+
+    $this->actingAs($admin)
+        ->from(route('teams.edit', $team))
+        ->post(route('teams.invitations.store', $team), [
+            'email' => 'sneaky@example.com',
+            'role' => TeamRole::Owner->value,
+        ])
+        ->assertSessionHasErrors('role');
+
+    $this->assertDatabaseCount('team_invitations', 0);
+});
+
 test('invitation email for existing users uses login route', function () {
     $owner = User::factory()->create();
     $invitedUser = User::factory()->create(['email' => 'invited@example.com']);

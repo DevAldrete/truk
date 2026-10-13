@@ -18,4 +18,8 @@ enum TeamPermission: string
     case ManageOperations = 'operations:manage';
     case ExecuteOperations = 'operations:execute';
     case OverrideCapacity = 'capacity:override';
+    case OverrideCompliance = 'compliance:override';
+    case ManageCompliance = 'compliance:manage';
+    case ManageBilling = 'billing:manage';
+    case ViewCosts = 'costs:view';
 }

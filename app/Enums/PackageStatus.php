@@ -27,8 +27,8 @@ enum PackageStatus: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::Created => [self::Loaded, self::Damaged],
-            self::Loaded => [self::InTransit, self::Damaged],
+            self::Created => [self::Loaded, self::InTransit, self::Delivered, self::Damaged],
+            self::Loaded => [self::InTransit, self::Delivered, self::Returned, self::Damaged],
             self::InTransit => [self::Delivered, self::Returned, self::Damaged],
             self::Delivered, self::Returned, self::Damaged => [],
         };

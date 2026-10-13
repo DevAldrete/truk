@@ -45,6 +45,12 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, ProofOfDelivery> $proofsOfDelivery
  * @property-read Collection<int, Incident> $incidents
  * @property-read Collection<int, Expense> $expenses
+ * @property-read Collection<int, TripCompliance> $tripCompliance
+ * @property-read Collection<int, RateCard> $rateCards
+ * @property-read Collection<int, Rate> $rates
+ * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, Payment> $payments
+ * @property-read Collection<int, Settlement> $settlements
  */
 #[Fillable(['name', 'slug', 'is_personal'])]
 class Team extends Model
@@ -343,6 +349,66 @@ class Team extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    /**
+     * Get all fiscal compliance snapshots of this team.
+     *
+     * @return HasMany<TripCompliance, $this>
+     */
+    public function tripCompliance(): HasMany
+    {
+        return $this->hasMany(TripCompliance::class);
+    }
+
+    /**
+     * Get all rate cards of this team.
+     *
+     * @return HasMany<RateCard, $this>
+     */
+    public function rateCards(): HasMany
+    {
+        return $this->hasMany(RateCard::class);
+    }
+
+    /**
+     * Get all rates of this team.
+     *
+     * @return HasMany<Rate, $this>
+     */
+    public function rates(): HasMany
+    {
+        return $this->hasMany(Rate::class);
+    }
+
+    /**
+     * Get all customer invoices of this team.
+     *
+     * @return HasMany<Invoice, $this>
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Get all payments of this team.
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get all settlements of this team.
+     *
+     * @return HasMany<Settlement, $this>
+     */
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(Settlement::class);
     }
 
     /**

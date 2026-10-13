@@ -27,6 +27,17 @@ class UpdateStopStatus
 
         $attributes = ['status' => $status];
 
+        if ($status === StopStatus::Arrived && $stop->actual_arrival_at === null) {
+            $attributes['actual_arrival_at'] = now();
+        }
+
+        if (
+            in_array($status, [StopStatus::Completed, StopStatus::Failed, StopStatus::Skipped], true)
+            && $stop->actual_departure_at === null
+        ) {
+            $attributes['actual_departure_at'] = now();
+        }
+
         if ($notes !== null) {
             $attributes['notes'] = $notes;
         }

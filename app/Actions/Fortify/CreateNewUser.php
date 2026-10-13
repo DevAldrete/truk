@@ -38,6 +38,12 @@ class CreateNewUser implements CreatesNewUsers
                 'password' => $input['password'],
             ]);
 
+            // When verification is disabled, mark the account verified so the
+            // user is never asked to confirm an email they cannot receive.
+            if (! config('auth.email_verification_required')) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+            }
+
             $this->createTeam->handle($user, $user->name."'s Team", isPersonal: true);
 
             return $user;

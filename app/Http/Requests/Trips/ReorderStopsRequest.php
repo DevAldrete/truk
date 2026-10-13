@@ -15,7 +15,7 @@ class ReorderStopsRequest extends FormRequest
     {
         return [
             'stop_ids' => ['required', 'array', 'min:1'],
-            'stop_ids.*' => ['integer'],
+            'stop_ids.*' => ['integer', 'distinct'],
         ];
     }
 }

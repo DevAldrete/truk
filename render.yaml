@@ -1,0 +1,105 @@
+# Render Blueprint for Truk.
+# https://render.com/docs/blueprint-spec
+#
+# Deploy: push this repository to GitHub, then in the Render dashboard choose
+# "New +" -> "Blueprint" and point it at the repository. Render reads this file,
+# provisions the Postgres database and the web service, and prompts for APP_KEY.
+
+databases:
+    - name: truk-db
+      databaseName: truk
+      user: truk
+      # Free Postgres is perfect for a demo but is removed after 30 days. Upgrade
+      # to a paid plan for anything longer-lived.
+      plan: free
+      postgresMajorVersion: "16"
+      region: oregon
+
+services:
+    - type: web
+      name: truk
+      runtime: docker
+      dockerfilePath: ./Dockerfile
+      # "free" spins down after inactivity (a ~50s cold start when a customer
+      # opens the link). "starter" keeps it warm — recommended for demos.
+      plan: starter
+      region: oregon
+      healthCheckPath: /up
+      autoDeploy: true
+      envVars:
+          - key: APP_NAME
+            value: Truk
+          - key: APP_ENV
+            value: production
+          - key: APP_DEBUG
+            value: "false"
+          # Generate with `php artisan key:generate --show`, then paste the value.
+          - key: APP_KEY
+            sync: false
+          - key: APP_LOCALE
+            value: es
+          - key: APP_FALLBACK_LOCALE
+            value: en
+          - key: LOG_LEVEL
+            value: warning
+          # Run migrations automatically on each boot.
+          - key: RUN_MIGRATIONS
+            value: "true"
+          # The image ships a client-side build only; there is no SSR server.
+          - key: INERTIA_SSR_ENABLED
+            value: "false"
+          - key: DB_CONNECTION
+            value: pgsql
+          - key: DB_HOST
+            fromDatabase:
+                name: truk-db
+                property: host
+          - key: DB_PORT
+            fromDatabase:
+                name: truk-db
+                property: port
+          - key: DB_DATABASE
+            fromDatabase:
+                name: truk-db
+                property: database
+          - key: DB_USERNAME
+            fromDatabase:
+                name: truk-db
+                property: user
+          - key: DB_PASSWORD
+            fromDatabase:
+                name: truk-db
+                property: password
+          # Postgres-backed sessions and cache; inline queue for the demo.
+          # Switch QUEUE_CONNECTION to "database" and add a background worker
+          # (see below) if you need queued jobs processed off the request.
+          - key: SESSION_DRIVER
+            value: database
+          - key: CACHE_STORE
+            value: database
+          - key: QUEUE_CONNECTION
+            value: sync
+          - key: FILESYSTEM_DISK
+            value: local
+          - key: MAIL_MAILER
+            value: log
+
+    # Uncomment to run queued jobs (team invitations, future async work) in a
+    # dedicated process. Remember to set QUEUE_CONNECTION=database on the web
+    # service above, and duplicate that service's environment variables here
+    # (Render environment variable groups are the tidy way to share them).
+    # This service is always on (it does not scale to zero).
+    #
+    # - type: worker
+    #   name: truk-worker
+    #   runtime: docker
+    #   dockerfilePath: ./Dockerfile
+    #   dockerCommand: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    #   plan: starter
+    #   region: oregon
+    #   envVars:
+    #       - key: APP_KEY
+    #         sync: false
+    #       - key: APP_ENV
+    #         value: production
+    #       # ...the remaining APP_*, DB_*, SESSION_*, CACHE_*, and QUEUE_* vars

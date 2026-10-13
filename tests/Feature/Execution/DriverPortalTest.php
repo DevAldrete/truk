@@ -33,6 +33,22 @@ test('a driver only sees their own open trips', function () {
             ->where('driver.id', $driver->id));
 });
 
+test('a driver without a linked profile sees no trips', function () {
+    $team = Team::factory()->create();
+    $driverUser = User::factory()->create();
+    $team->members()->attach($driverUser, ['role' => TeamRole::Driver->value]);
+
+    Trip::factory()->for($team)->create(['status' => TripStatus::Dispatched]);
+
+    $this->actingAs($driverUser)
+        ->get(route('driver.index', $team))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('driver/Trips')
+            ->has('trips', 0)
+            ->where('driver', null));
+});
+
 test('a planner sees every open trip', function () {
     $user = User::factory()->create();
     $team = Team::factory()->create();

@@ -11,6 +11,7 @@ use App\Models\Package;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\Team;
+use App\Models\Trip;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -92,8 +93,8 @@ class ShipmentController extends Controller
         $status = $request->query('status');
 
         return [
-            'shipments' => Shipment::query()
-                ->with('order:id,number')
+            'shipments' => Inertia::scroll(Shipment::query()
+                ->with(['order:id,number', 'loadGroup:id,number'])
                 ->withCount(['items', 'packages'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(number) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -105,7 +106,7 @@ class ShipmentController extends Controller
                 ->latest()
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Shipment $shipment) => $this->summary($shipment)),
+                ->through(fn (Shipment $shipment) => $this->summary($shipment))),
             'filters' => [
                 'search' => $search,
                 'status' => is_string($status) && in_array($status, ShipmentStatus::values(), true) ? $status : null,
@@ -141,6 +142,8 @@ class ShipmentController extends Controller
             'customer_name' => $shipment->customer_name,
             'order_id' => $shipment->order_id,
             'order_number' => $shipment->order?->number,
+            'load_id' => $shipment->load_id,
+            'load_number' => $shipment->loadGroup?->number,
             'pickup_location_id' => $shipment->pickup_location_id,
             'delivery_location_id' => $shipment->delivery_location_id,
             'pickup_snapshot' => $shipment->pickup_snapshot,
@@ -166,8 +169,15 @@ class ShipmentController extends Controller
             'packages' => fn ($query) => $query->orderBy('id'),
         ]);
 
+        $trip = Trip::query()
+            ->whereHas('stops.shipments', fn ($query) => $query->whereKey($shipment->id))
+            ->orderByDesc('planned_start_at')
+            ->first(['id', 'number']);
+
         return [
             ...$this->summary($shipment),
+            'trip_id' => $trip?->id,
+            'trip_number' => $trip?->number,
             'items_count' => $shipment->items->count(),
             'packages_count' => $shipment->packages->count(),
             'package_limit' => (int) config('shipments.max_packages_per_shipment'),

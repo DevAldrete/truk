@@ -6,6 +6,7 @@ import IncidentSheet from '@/components/driver/IncidentSheet.vue';
 import PodSheet from '@/components/driver/PodSheet.vue';
 import ScanSheet from '@/components/driver/ScanSheet.vue';
 import StopStatusButtons from '@/components/driver/StopStatusButtons.vue';
+import { formatDateTime } from '@/lib/datetime';
 import type { DriverOptions, DriverStop } from '@/types';
 
 const props = defineProps<{
@@ -71,7 +72,7 @@ const hasPackages = (index: number) =>
                     v-if="stop.planned_at"
                     class="mt-1 text-xs text-muted-foreground"
                 >
-                    {{ stop.planned_at }}
+                    {{ formatDateTime(stop.planned_at) }}
                 </p>
             </div>
         </header>
@@ -147,7 +148,7 @@ const hasPackages = (index: number) =>
                             · {{ attempt.failure_reason_label }}
                         </template>
                     </span>
-                    <span>{{ attempt.occurred_at }}</span>
+                    <span>{{ formatDateTime(attempt.occurred_at) }}</span>
                 </li>
             </ul>
         </div>

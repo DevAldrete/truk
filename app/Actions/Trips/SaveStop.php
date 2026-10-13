@@ -24,6 +24,10 @@ class SaveStop
     {
         return DB::transaction(function () use ($team, $trip, $data): Stop {
             $location = $this->location($team, $data['location_id'] ?? null);
+
+            // Lock the trip so concurrent stop creations cannot collide on sequence.
+            $trip->newQuery()->whereKey($trip->id)->lockForUpdate()->first();
+
             $sequence = (int) $trip->stops()->max('sequence') + 1;
 
             return $team->stops()->create([

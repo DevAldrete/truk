@@ -4,12 +4,14 @@ namespace App\Actions\Orders;
 
 use App\Actions\GenerateDocumentNumber;
 use App\Actions\Shipments\StorePackages;
+use App\Enums\OrderStatus;
 use App\Enums\ShipmentStatus;
 use App\Models\Location;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\Team;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Turns an order into a shipment: copies the items, snapshots the pickup and
@@ -31,6 +33,18 @@ class ConvertOrderToShipment
     public function handle(Team $team, Order $order, array $data = []): Shipment
     {
         return DB::transaction(function () use ($team, $order, $data): Shipment {
+            if ($order->shipments()->exists()) {
+                throw ValidationException::withMessages([
+                    'order' => __('A shipment was already created from this order.'),
+                ]);
+            }
+
+            if (in_array($order->status, [OrderStatus::Cancelled, OrderStatus::Completed], true)) {
+                throw ValidationException::withMessages([
+                    'order' => __('This order can no longer be converted into a shipment.'),
+                ]);
+            }
+
             $pickup = $this->location($team, $data['pickup_location_id'] ?? null);
             $delivery = $this->location($team, $data['delivery_location_id'] ?? null);
 
@@ -65,6 +79,9 @@ class ConvertOrderToShipment
             }
 
             $this->packages->handle($team, $shipment, (int) ($data['package_count'] ?? 0));
+
+            // Mark the order as being fulfilled so it cannot be converted again.
+            $order->update(['status' => OrderStatus::InProgress->value]);
 
             return $shipment->load('items', 'packages');
         });

@@ -10,6 +10,7 @@ use App\Models\Membership;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -23,19 +24,23 @@ class TeamMemberController extends Controller
     {
         Gate::authorize('addMember', $team);
 
-        $user = User::create([
-            'name' => $request->validated('name'),
-            'username' => $request->validated('login'),
-            'email' => null,
-            'password' => $request->validated('password'),
-        ]);
+        $user = DB::transaction(function () use ($request, $team): User {
+            $user = User::create([
+                'name' => $request->validated('name'),
+                'username' => $request->validated('login'),
+                'email' => null,
+                'password' => $request->validated('password'),
+            ]);
 
-        $user->forceFill(['email_verified_at' => now()])->save();
+            $user->forceFill(['email_verified_at' => now()])->save();
 
-        $team->memberships()->create([
-            'user_id' => $user->id,
-            'role' => TeamRole::from($request->validated('role')),
-        ]);
+            $team->memberships()->create([
+                'user_id' => $user->id,
+                'role' => TeamRole::from($request->validated('role')),
+            ]);
+
+            return $user;
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __(':name was created.', ['name' => $user->name])]);
 
@@ -86,7 +91,7 @@ class TeamMemberController extends Controller
         $membership->delete();
 
         if ($user->isCurrentTeam($team)) {
-            $user->switchTeam($user->personalTeam());
+            $user->switchTeam($user->personalTeam() ?? $user->fallbackTeam($team));
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);

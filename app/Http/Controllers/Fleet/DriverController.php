@@ -92,7 +92,7 @@ class DriverController extends Controller
         $search = $request->string('search')->trim()->value() ?: null;
 
         return [
-            'drivers' => Driver::query()
+            'drivers' => Inertia::scroll(Driver::query()
                 ->with(['carrierParty:id,name', 'user:id,name', 'documents'])
                 ->when($search, fn ($query, string $search) => $query->where(fn ($query) => $query
                     ->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
@@ -101,7 +101,7 @@ class DriverController extends Controller
                 ->orderBy('name')
                 ->paginate(25)
                 ->withQueryString()
-                ->through(fn (Driver $driver) => $this->summary($driver)),
+                ->through(fn (Driver $driver) => $this->summary($driver))),
             'filters' => [
                 'search' => $search,
             ],

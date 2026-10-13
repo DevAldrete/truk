@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { Plus, X } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
@@ -15,11 +15,12 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { update as updateResources } from '@/routes/trips/resources';
-import { dispatch as dispatchTrip } from '@/routes/trips';
+import { dispatch as dispatchTrip, show as showTrip } from '@/routes/trips';
 import {
     destroy as removeTripShipment,
     store as assignTripShipment,
 } from '@/routes/trips/shipments';
+import { show as showShipment } from '@/routes/shipments';
 import type { DispatchPoolShipment, DispatchTrip, Option } from '@/types';
 
 const props = defineProps<{
@@ -31,6 +32,7 @@ const props = defineProps<{
     pool: DispatchPoolShipment[];
     canManage: boolean;
     canOverride: boolean;
+    canOverrideCompliance: boolean;
 }>();
 
 const formatDate = (value: string | null): string => {
@@ -66,6 +68,7 @@ const saveResources = () => {
 const dispatchForm = useForm({
     status: 'dispatched',
     capacity_override_reason: '',
+    compliance_override_reason: '',
 });
 
 const dispatch = () => {
@@ -112,12 +115,21 @@ const removeShipment = (shipmentId: number) => {
 <template>
     <article
         class="rounded-xl border p-4"
-        :class="trip.capacity.over ? 'border-destructive/50' : ''"
+        :class="
+            trip.capacity.over || !trip.compliance.ok
+                ? 'border-destructive/50'
+                : ''
+        "
         :data-test="`dispatch-trip-${trip.id}`"
     >
         <header class="flex items-start justify-between gap-2">
             <div class="min-w-0">
-                <p class="text-sm font-semibold">{{ trip.number }}</p>
+                <Link
+                    class="text-sm font-semibold hover:underline"
+                    :href="showTrip({ current_team: teamSlug, trip: trip.id })"
+                >
+                    {{ trip.number }}
+                </Link>
                 <p class="text-xs text-muted-foreground">
                     {{ trip.status_label }}
                     <template v-if="trip.planned_start_at">
@@ -198,6 +210,25 @@ const removeShipment = (shipmentId: number) => {
             <CapacityGauge :capacity="trip.capacity" />
         </div>
 
+        <div
+            v-if="!trip.compliance.ok"
+            class="mt-3 rounded-md border border-destructive/40 p-2"
+        >
+            <p class="text-xs font-medium text-destructive">
+                {{ $t('Non-compliant') }}
+            </p>
+            <ul
+                class="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-destructive"
+            >
+                <li
+                    v-for="(violation, index) in trip.compliance.violations"
+                    :key="index"
+                >
+                    {{ violation.message }}
+                </li>
+            </ul>
+        </div>
+
         <div class="mt-4">
             <p class="text-xs font-medium text-muted-foreground">
                 {{ $t('Shipments') }}
@@ -209,7 +240,17 @@ const removeShipment = (shipmentId: number) => {
                     :key="shipment.id"
                     class="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
                 >
-                    {{ shipment.number }}
+                    <Link
+                        class="hover:underline"
+                        :href="
+                            showShipment({
+                                current_team: teamSlug,
+                                shipment: shipment.id,
+                            })
+                        "
+                    >
+                        {{ shipment.number }}
+                    </Link>
                     <button
                         v-if="canManage"
                         type="button"
@@ -256,12 +297,9 @@ const removeShipment = (shipmentId: number) => {
 
         <div
             v-if="canManage && trip.status === 'planned'"
-            class="mt-4 flex items-end gap-2"
+            class="mt-4 flex flex-col gap-3"
         >
-            <div
-                v-if="trip.capacity.over && canOverride"
-                class="grid flex-1 gap-2"
-            >
+            <div v-if="trip.capacity.over && canOverride" class="grid gap-2">
                 <Label :for="`override-${trip.id}`">
                     {{ $t('Override reason') }}
                 </Label>
@@ -273,13 +311,32 @@ const removeShipment = (shipmentId: number) => {
                     :message="dispatchForm.errors.capacity_override_reason"
                 />
             </div>
-            <Button
-                size="sm"
-                :disabled="dispatchForm.processing"
-                @click="dispatch"
+
+            <div
+                v-if="!trip.compliance.ok && canOverrideCompliance"
+                class="grid gap-2"
             >
-                {{ $t('Dispatch') }}
-            </Button>
+                <Label :for="`compliance-override-${trip.id}`">
+                    {{ $t('Compliance override reason') }}
+                </Label>
+                <Textarea
+                    :id="`compliance-override-${trip.id}`"
+                    v-model="dispatchForm.compliance_override_reason"
+                />
+                <InputError
+                    :message="dispatchForm.errors.compliance_override_reason"
+                />
+            </div>
+
+            <div>
+                <Button
+                    size="sm"
+                    :disabled="dispatchForm.processing"
+                    @click="dispatch"
+                >
+                    {{ $t('Dispatch') }}
+                </Button>
+            </div>
         </div>
         <InputError :message="dispatchForm.errors.status" />
     </article>
